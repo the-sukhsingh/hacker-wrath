@@ -1,0 +1,68 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native & Build Artifacts
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.keystore
+
+# Metro
+.metro-health-check*
+
+# Debug & Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+pnpm-debug.*
+*.log
+
+# Environment & Secrets (Never commit credentials)
+.env
+.env.*
+.env*.local
+!.env.example
+*.pem
+
+# AI Models & Large Binaries
+models/
+*.gguf
+*.bin
+*.onnx
+
+# User Audio Recordings & Media
+recordings/
+*.wav
+*.mp3
+*.m4a
+*.aac
+
+# IDE & OS Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+*.swp
+*~
+
+# TypeScript
+*.tsbuildinfo
+
+# Continuous Native Generation (CNG) folders
+/ios
+/android
+ios/
+android/
