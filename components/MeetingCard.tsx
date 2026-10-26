@@ -282,6 +282,11 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: 14,
     borderRadius: 18,
+    shadowColor: '#E06D53',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.22,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionBtnText: {
     fontSize: 12,

@@ -335,7 +335,7 @@ export default function RecordScreen() {
                 styles.meetingSelectorText,
                 { color: selectedMeeting ? colors.text : colors.textSecondary },
               ]}>
-              {selectedMeeting ? selectedMeeting.title : 'Project Kickoff (Live Meeting Linked)'}
+              {selectedMeeting ? selectedMeeting.title : 'Quick Voice Note (Tap to link a meeting)'}
             </Text>
             {!activeRecording.isRecording && (
               <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
@@ -352,7 +352,7 @@ export default function RecordScreen() {
                 <Ionicons name="chatbubble-ellipses" size={14} color={colors.coral} />
               </View>
               <Text style={[styles.floatingSpeechText, { color: colors.text }]} numberOfLines={1}>
-                {liveTranscript.length > 0 ? liveTranscript : "We had a meeting with FDC today at 1 PM"}
+                {liveTranscript.length > 0 ? liveTranscript : "Listening for speech to transcribe..."}
               </Text>
               <TouchableOpacity
                 onPress={() => setIsEditingTranscript(true)}

@@ -71,11 +71,11 @@ export function WaveformVisualizer({
                 height: animHeight,
                 backgroundColor: isRecording
                   ? isPaused
-                    ? '#F59E0B'
-                    : '#0B57D0'
+                    ? '#F5C242'
+                    : '#E06D53'
                   : theme === 'dark'
                   ? '#44474E'
-                  : '#C3C7D0',
+                  : '#E0DCD6',
               },
             ]}
           />
