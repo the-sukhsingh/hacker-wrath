@@ -1,8 +1,8 @@
-import React from 'react';
-import { StyleSheet, Pressable, TouchableOpacity } from 'react-native';
+import React, { memo } from 'react';
+import { StyleSheet, Pressable, TouchableOpacity, Share } from 'react-native';
 import { Text, View } from './Themed';
 import { Ionicons } from '@expo/vector-icons';
-import { Meeting, PlatformType } from '@/types/meeting';
+import { Meeting } from '@/types/meeting';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from './useColorScheme';
 
@@ -10,92 +10,139 @@ interface MeetingCardProps {
   meeting: Meeting;
   onPress?: () => void;
   onRecordPress?: () => void;
+  onInvitePress?: () => void;
   isCurrentlyRecording?: boolean;
 }
 
-export function MeetingCard({
+const AVATAR_COLORS = ['#F5C242', '#E06D53', '#4D5C3B', '#3B82F6', '#8B5CF6'];
+
+function getInitials(name: string): string {
+  if (!name) return 'U';
+  const parts = name.trim().split(' ');
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+export const MeetingCard = memo(function MeetingCard({
   meeting,
   onPress,
   onRecordPress,
+  onInvitePress,
   isCurrentlyRecording = false,
 }: MeetingCardProps) {
   const theme = useColorScheme();
   const colors = Colors[theme];
 
-  const getPlatformIcon = (platform: PlatformType): { name: any; color: string; label: string } => {
-    switch (platform) {
-      case 'google_meet':
-        return { name: 'videocam', color: '#1A73E8', label: 'Google Meet' };
-      case 'zoom':
-        return { name: 'videocam-outline', color: '#1D4ED8', label: 'Zoom' };
-      case 'teams':
-        return { name: 'people', color: '#5B5FC7', label: 'Teams' };
-      case 'in_person':
-        return { name: 'location', color: '#D97706', label: 'In Person' };
-      default:
-        return { name: 'calendar', color: colors.onSurfaceVariant, label: 'Meeting' };
+  const hasRecording = meeting.recordingIds && meeting.recordingIds.length > 0;
+  const meetingUrl = meeting.meetingUrl || `https://meetanotes.io/${meeting.id.replace('meet-', '')}`;
+
+  const handleShare = async () => {
+    if (onInvitePress) {
+      onInvitePress();
+      return;
+    }
+    try {
+      await Share.share({
+        title: meeting.title,
+        message: `Join meeting "${meeting.title}" on MeetaNotes: ${meetingUrl}`,
+        url: meetingUrl,
+      });
+    } catch {
+      // Ignored
     }
   };
-
-  const platformInfo = getPlatformIcon(meeting.platform);
-  const hasRecording = meeting.recordingIds && meeting.recordingIds.length > 0;
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
-        styles.m3Card,
+        styles.card,
         {
-          backgroundColor: isCurrentlyRecording ? colors.surfaceContainerHighest : colors.surfaceContainerLow,
-          borderColor: isCurrentlyRecording ? colors.error : colors.outlineVariant,
+          backgroundColor: isCurrentlyRecording ? colors.coralLight : colors.surface,
+          borderColor: isCurrentlyRecording ? colors.coral : colors.border,
           transform: [{ scale: pressed ? 0.985 : 1 }],
         },
       ]}>
-      {/* Top Meta Bar */}
-      <View style={styles.topBar}>
-        <View style={styles.timeTag}>
-          <Ionicons name="time-outline" size={13} color={colors.onSurfaceVariant} />
-          <Text style={[styles.timeText, { color: colors.onSurfaceVariant }]}>
-            {meeting.startTime} – {meeting.endTime} ({meeting.durationMinutes}m)
+      {/* Top Meta Row: Time & Duration + Three dots */}
+      <View style={styles.topRow}>
+        <View style={styles.timeRow}>
+          <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+            {meeting.startTime.toLowerCase()} • {meeting.durationMinutes}min
           </Text>
         </View>
 
-        <View style={[styles.m3Chip, { backgroundColor: colors.surfaceContainerHigh }]}>
-          <Ionicons name={platformInfo.name} size={11} color={platformInfo.color} style={{ marginRight: 4 }} />
-          <Text style={[styles.platformText, { color: colors.onSurface }]}>
-            {platformInfo.label}
-          </Text>
-        </View>
+        <TouchableOpacity
+          onPress={handleShare}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.threeDotsBtn, { backgroundColor: colors.surfaceContainer }]}>
+          <Ionicons name="ellipsis-horizontal" size={16} color={colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       {/* Meeting Title */}
-      <Text style={[styles.title, { color: colors.onSurface }]} numberOfLines={2}>
+      <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
         {meeting.title}
       </Text>
 
-      {/* Agenda Snippet if present */}
-      {meeting.agenda ? (
-        <Text style={[styles.agenda, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
-          {meeting.agenda}
+      {/* MeetaNotes Meeting Link Chip */}
+      <View style={[styles.linkChip, { backgroundColor: colors.surfaceContainer }]}>
+        <Ionicons name="videocam-outline" size={14} color={colors.primary} style={{ marginRight: 6 }} />
+        <Text style={[styles.linkText, { color: colors.textSecondary }]} numberOfLines={1}>
+          {meetingUrl}
         </Text>
-      ) : null}
+      </View>
 
-      {/* Attendees and Actions Bar */}
-      <View style={styles.footerBar}>
-        <View style={styles.attendeesContainer}>
-          <Ionicons name="people-outline" size={13} color={colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-          <Text style={[styles.attendeesText, { color: colors.onSurfaceVariant }]} numberOfLines={1}>
-            {meeting.attendees.length > 0
-              ? `${meeting.attendees[0]}${meeting.attendees.length > 1 ? ` +${meeting.attendees.length - 1}` : ''}`
-              : 'No attendees listed'}
-          </Text>
+      {/* Footer: Facepile on Left, Action on Right */}
+      <View style={styles.footerRow}>
+        {/* Attendee Facepile */}
+        <View style={styles.facepileContainer}>
+          {meeting.attendees.slice(0, 3).map((attendee, index) => {
+            const avatarBg = AVATAR_COLORS[index % AVATAR_COLORS.length];
+            return (
+              <View
+                key={attendee + index}
+                style={[
+                  styles.avatarCircle,
+                  {
+                    backgroundColor: avatarBg,
+                    marginLeft: index === 0 ? 0 : -8,
+                    borderColor: colors.surface,
+                  },
+                ]}>
+                <Text style={styles.avatarInitials}>{getInitials(attendee)}</Text>
+              </View>
+            );
+          })}
+
+          {meeting.attendees.length > 3 && (
+            <View
+              style={[
+                styles.extraAttendeesBadge,
+                {
+                  backgroundColor: colors.surfaceContainerHigh,
+                  marginLeft: -8,
+                  borderColor: colors.surface,
+                },
+              ]}>
+              <Text style={[styles.extraAttendeesText, { color: colors.textSecondary }]}>
+                +{meeting.attendees.length - 3}
+              </Text>
+            </View>
+          )}
+
+          {meeting.attendees.length === 0 && (
+            <Text style={[styles.noAttendeesText, { color: colors.textMuted }]}>
+              No attendees
+            </Text>
+          )}
         </View>
 
+        {/* Action Button */}
         {onRecordPress ? (
           <TouchableOpacity
             onPress={onRecordPress}
             style={[
-              styles.m3Button,
+              styles.actionBtn,
               {
                 backgroundColor: isCurrentlyRecording
                   ? colors.error
@@ -111,20 +158,20 @@ export function MeetingCard({
                 isCurrentlyRecording
                   ? colors.onError
                   : hasRecording
-                  ? colors.onSurface
-                  : colors.onPrimary
+                  ? colors.text
+                  : colors.primaryText
               }
               style={{ marginRight: 5 }}
             />
             <Text
               style={[
-                styles.m3ButtonText,
+                styles.actionBtnText,
                 {
                   color: isCurrentlyRecording
                     ? colors.onError
                     : hasRecording
-                    ? colors.onSurface
-                    : colors.onPrimary,
+                    ? colors.text
+                    : colors.primaryText,
                 },
               ]}>
               {isCurrentlyRecording ? 'Live' : hasRecording ? 'View Note' : 'Record'}
@@ -134,86 +181,109 @@ export function MeetingCard({
       </View>
     </Pressable>
   );
-}
+});
 
 const styles = StyleSheet.create({
-  m3Card: {
+  card: {
     borderRadius: 20,
     borderWidth: 1,
     padding: 16,
     marginBottom: 12,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
   },
-  topBar: {
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
     backgroundColor: 'transparent',
   },
-  timeTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+  timeRow: {
     backgroundColor: 'transparent',
   },
   timeText: {
     fontSize: 12,
     fontWeight: '500',
+    letterSpacing: 0.2,
   },
-  m3Chip: {
-    flexDirection: 'row',
+  threeDotsBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-  },
-  platformText: {
-    fontSize: 11,
-    fontWeight: '600',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    letterSpacing: 0.1,
-    lineHeight: 22,
-    marginBottom: 6,
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+    lineHeight: 21,
+    marginBottom: 10,
   },
-  agenda: {
-    fontSize: 13,
-    lineHeight: 18,
+  linkChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 10,
     marginBottom: 12,
   },
-  footerBar: {
+  linkText: {
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+  },
+  footerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
     backgroundColor: 'transparent',
   },
-  attendeesContainer: {
+  facepileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
-    marginRight: 12,
     backgroundColor: 'transparent',
   },
-  attendeesText: {
-    fontSize: 12,
-    fontWeight: '500',
+  avatarCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
-  m3Button: {
+  avatarInitials: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  extraAttendeesBadge: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+  },
+  extraAttendeesText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  noAttendeesText: {
+    fontSize: 11,
+  },
+  actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 7,
     paddingHorizontal: 14,
-    borderRadius: 20,
+    borderRadius: 18,
   },
-  m3ButtonText: {
+  actionBtnText: {
     fontSize: 12,
     fontWeight: '700',
   },
