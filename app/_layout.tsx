@@ -52,7 +52,9 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme} >
       <Stack screenOptions={{
-        headerTransparent: true
+        headerTransparent: true,
+        statusBarStyle: 'dark',
+        statusBarHidden: false
       }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="meeting/[id]" options={{ presentation: 'card', headerShown: true }} />

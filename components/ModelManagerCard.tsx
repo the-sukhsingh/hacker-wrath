@@ -24,7 +24,11 @@ import { ModelId, WhisperModelDefinition } from '@/types/model';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
-export function ModelManagerCard() {
+export interface ModelManagerCardProps {
+  embedded?: boolean;
+}
+
+export function ModelManagerCard({ embedded = false }: ModelManagerCardProps) {
   const theme = useColorScheme();
   const colors = Colors[theme];
 
@@ -152,19 +156,25 @@ export function ModelManagerCard() {
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.cardBorder }]}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <View style={styles.headerTitleContainer}>
-          <View style={styles.badgeRow}>
-            <Ionicons name="hardware-chip-outline" size={16} color={colors.accent} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>On-Device AI Models</Text>
+    <View
+      style={[
+        embedded ? styles.embeddedContainer : styles.card,
+        !embedded && { backgroundColor: colors.card, borderColor: colors.cardBorder },
+      ]}>
+      {/* Header (only when not embedded in settings list) */}
+      {!embedded && (
+        <View style={styles.headerRow}>
+          <View style={styles.headerTitleContainer}>
+            <View style={styles.badgeRow}>
+              <Ionicons name="hardware-chip-outline" size={16} color={colors.accent} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>On-Device AI Models</Text>
+            </View>
+            <Text style={[styles.sectionDesc, { color: colors.textSecondary }]}>
+              Quantized Whisper STT & Google Gemma SLM for offline task extraction
+            </Text>
           </View>
-          <Text style={[styles.sectionDesc, { color: colors.textSecondary }]}>
-            Quantized Whisper STT & Google Gemma SLM for offline task extraction
-          </Text>
         </View>
-      </View>
+      )}
 
       {/* Mode Segment Tabs */}
       <View style={[styles.tabBar, { backgroundColor: colors.surface, borderColor: colors.cardBorder }]}>
@@ -433,6 +443,9 @@ export function ModelManagerCard() {
 }
 
 const styles = StyleSheet.create({
+  embeddedContainer: {
+    paddingTop: 8,
+  },
   card: {
     borderRadius: 20,
     borderWidth: 1,
