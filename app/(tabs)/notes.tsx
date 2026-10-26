@@ -4,6 +4,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,17 +16,47 @@ import { useColorScheme } from '@/components/useColorScheme';
 
 type FilterCategory = 'all' | 'actions' | 'audio';
 
+interface SampleFolder {
+  id: string;
+  name: string;
+  size: string;
+  color: string;
+  iconColor: string;
+}
+
+interface RecentFile {
+  id: string;
+  name: string;
+  size: string;
+  type: 'mp4' | 'pdf' | 'wav';
+  date: string;
+}
+
+const SAMPLE_FOLDERS: SampleFolder[] = [
+  { id: 'f-1', name: 'Project Beta', size: '13.5 mb', color: '#EBF0E6', iconColor: '#4D5C3B' },
+  { id: 'f-2', name: 'Team Collab', size: '12.2 mb', color: '#FDF4F2', iconColor: '#E06D53' },
+  { id: 'f-3', name: 'Sprint Review', size: '9.4 mb', color: '#FEF3D6', iconColor: '#F5C242' },
+  { id: 'f-4', name: 'Archived Notes', size: '28.1 mb', color: '#EDE9FE', iconColor: '#7C3AED' },
+];
+
+const RECENT_FILES: RecentFile[] = [
+  { id: 'file-1', name: 'Project Portfolio v2', size: '3.5 mb', type: 'mp4', date: 'Today' },
+  { id: 'file-2', name: 'Progress Report 2025', size: '2.1 mb', type: 'pdf', date: 'Yesterday' },
+  { id: 'file-3', name: 'Strategy Planning Session', size: '4.8 mb', type: 'wav', date: 'Oct 24' },
+];
+
 export default function NotesScreen() {
   const router = useRouter();
   const theme = useColorScheme();
   const colors = Colors[theme];
   const insets = useSafeAreaInsets();
 
-  const { recordings } = useMeetingStore();
+  const { recordings, settings } = useMeetingStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();
@@ -97,73 +128,85 @@ export default function NotesScreen() {
     }
   };
 
-  const resetFilters = () => {
-    setSearchQuery('');
-    setSelectedFilter('all');
-    setSelectedTag(null);
+  const handleShareFile = async (fileName: string) => {
+    try {
+      await Share.share({
+        title: fileName,
+        message: `Sharing ${fileName} from MeetaNotes`,
+      });
+    } catch {
+      // Ignored
+    }
   };
 
-  const isFiltering = searchQuery.trim().length > 0 || selectedFilter !== 'all' || selectedTag !== null;
+  const userInitials = (settings.userName || 'Launa Vendrick')
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 14) }]}>
-      {/* Top Header */}
+      {/* 1. TOP HEADER (Avatar, Title, Search & Record) */}
       <View style={styles.topHeader}>
-        <View style={styles.titleRow}>
-          <Text style={[styles.headerTitle, { color: colors.onSurface }]}>Notes</Text>
-          <View style={[styles.countChip, { backgroundColor: colors.secondaryContainer }]}>
-            <Text style={[styles.countChipText, { color: colors.onSecondaryContainer }]}>
-              {recordings.length}
-            </Text>
-          </View>
-        </View>
-
+        {/* User Avatar */}
         <TouchableOpacity
-          onPress={() => router.push('/record')}
-          style={[styles.m3FabSmall, { backgroundColor: colors.primaryContainer }]}>
-          <Ionicons name="mic" size={16} color={colors.onPrimaryContainer} />
-          <Text style={[styles.m3FabSmallText, { color: colors.onPrimaryContainer }]}>Record</Text>
+          onPress={() => router.push('/settings')}
+          style={[styles.avatarCircle, { backgroundColor: colors.amber }]}>
+          <Text style={styles.avatarInitials}>{userInitials}</Text>
         </TouchableOpacity>
+
+        <View style={styles.headerRightActions}>
+          <TouchableOpacity
+            onPress={() => router.push('/record')}
+            style={[styles.recordFab, { backgroundColor: colors.coral }]}>
+            <Ionicons name="mic" size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
+            <Text style={styles.recordFabText}>Record</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* M3 Search Bar */}
+      {/* Screen Title */}
+      <View style={styles.titleSection}>
+        <Text style={[styles.screenTitle, { color: colors.text }]}>My Notes</Text>
+      </View>
+
+      {/* 2. SEARCH BAR */}
       <View style={styles.searchWrapper}>
-        <View style={[styles.m3SearchBar, { backgroundColor: colors.surfaceContainerHigh }]}>
-          <Ionicons name="search" size={18} color={colors.onSurfaceVariant} style={styles.searchIcon} />
+        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Ionicons name="search" size={17} color={colors.textSecondary} style={styles.searchIcon} />
           <TextInput
             value={searchQuery}
             onChangeText={setSearchQuery}
             placeholder="Search notes, action items, tags..."
-            placeholderTextColor={colors.onSurfaceVariant}
-            style={[styles.searchInput, { color: colors.onSurface }]}
+            placeholderTextColor={colors.textMuted}
+            style={[styles.searchInput, { color: colors.text }]}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close-circle" size={18} color={colors.onSurfaceVariant} />
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {/* M3 Filter Chips Row */}
+      {/* Filter Chips */}
       <View style={styles.chipsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsScroll}>
           <TouchableOpacity
             onPress={() => setSelectedFilter('all')}
             style={[
-              styles.m3FilterChip,
+              styles.filterChip,
               {
-                backgroundColor: selectedFilter === 'all' ? colors.secondaryContainer : colors.surfaceContainerLow,
-                borderColor: selectedFilter === 'all' ? colors.primary : colors.outlineVariant,
+                backgroundColor: selectedFilter === 'all' ? colors.coral : colors.surface,
+                borderColor: selectedFilter === 'all' ? colors.coral : colors.border,
               },
             ]}>
-            {selectedFilter === 'all' && (
-              <Ionicons name="checkmark" size={13} color={colors.onSecondaryContainer} style={{ marginRight: 4 }} />
-            )}
             <Text
               style={[
-                styles.m3FilterChipText,
-                { color: selectedFilter === 'all' ? colors.onSecondaryContainer : colors.onSurfaceVariant },
+                styles.filterChipText,
+                { color: selectedFilter === 'all' ? '#FFFFFF' : colors.textSecondary },
               ]}>
               All Notes
             </Text>
@@ -172,19 +215,16 @@ export default function NotesScreen() {
           <TouchableOpacity
             onPress={() => setSelectedFilter('actions')}
             style={[
-              styles.m3FilterChip,
+              styles.filterChip,
               {
-                backgroundColor: selectedFilter === 'actions' ? colors.secondaryContainer : colors.surfaceContainerLow,
-                borderColor: selectedFilter === 'actions' ? colors.primary : colors.outlineVariant,
+                backgroundColor: selectedFilter === 'actions' ? colors.coral : colors.surface,
+                borderColor: selectedFilter === 'actions' ? colors.coral : colors.border,
               },
             ]}>
-            {selectedFilter === 'actions' && (
-              <Ionicons name="checkmark" size={13} color={colors.onSecondaryContainer} style={{ marginRight: 4 }} />
-            )}
             <Text
               style={[
-                styles.m3FilterChipText,
-                { color: selectedFilter === 'actions' ? colors.onSecondaryContainer : colors.onSurfaceVariant },
+                styles.filterChipText,
+                { color: selectedFilter === 'actions' ? '#FFFFFF' : colors.textSecondary },
               ]}>
               With Action Items
             </Text>
@@ -193,41 +233,38 @@ export default function NotesScreen() {
           <TouchableOpacity
             onPress={() => setSelectedFilter('audio')}
             style={[
-              styles.m3FilterChip,
+              styles.filterChip,
               {
-                backgroundColor: selectedFilter === 'audio' ? colors.secondaryContainer : colors.surfaceContainerLow,
-                borderColor: selectedFilter === 'audio' ? colors.primary : colors.outlineVariant,
+                backgroundColor: selectedFilter === 'audio' ? colors.coral : colors.surface,
+                borderColor: selectedFilter === 'audio' ? colors.coral : colors.border,
               },
             ]}>
-            {selectedFilter === 'audio' && (
-              <Ionicons name="checkmark" size={13} color={colors.onSecondaryContainer} style={{ marginRight: 4 }} />
-            )}
             <Text
               style={[
-                styles.m3FilterChipText,
-                { color: selectedFilter === 'audio' ? colors.onSecondaryContainer : colors.onSurfaceVariant },
+                styles.filterChipText,
+                { color: selectedFilter === 'audio' ? '#FFFFFF' : colors.textSecondary },
               ]}>
               With Audio
             </Text>
           </TouchableOpacity>
 
           {allTags.map((tag) => {
-            const isTagSelected = selectedTag === tag;
+            const isSelected = selectedTag === tag;
             return (
               <TouchableOpacity
                 key={tag}
-                onPress={() => setSelectedTag(isTagSelected ? null : tag)}
+                onPress={() => setSelectedTag(isSelected ? null : tag)}
                 style={[
-                  styles.m3FilterChip,
+                  styles.filterChip,
                   {
-                    backgroundColor: isTagSelected ? colors.tertiaryContainer : colors.surfaceContainerLow,
-                    borderColor: isTagSelected ? colors.tertiary : colors.outlineVariant,
+                    backgroundColor: isSelected ? colors.olive : colors.surface,
+                    borderColor: isSelected ? colors.olive : colors.border,
                   },
                 ]}>
                 <Text
                   style={[
-                    styles.m3FilterChipText,
-                    { color: isTagSelected ? colors.onTertiaryContainer : colors.onSurfaceVariant },
+                    styles.filterChipText,
+                    { color: isSelected ? '#FFFFFF' : colors.textSecondary },
                   ]}>
                   #{tag}
                 </Text>
@@ -237,24 +274,127 @@ export default function NotesScreen() {
         </ScrollView>
       </View>
 
-      {/* Notes List */}
-      <ScrollView contentContainerStyle={styles.listContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 90, 100) }]}
+        showsVerticalScrollIndicator={false}>
+        
+        {/* 3. FEATURED FOLDERS CAROUSEL (From UI Kit Image 1 & 4) */}
+        {!searchQuery && (
+          <>
+            <View style={styles.carouselContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselScroll}>
+                {/* Olive Green Folder Card */}
+                <View style={[styles.folderCardLarge, { backgroundColor: colors.olive }]}>
+                  <View style={styles.folderCardTop}>
+                    <Ionicons name="folder" size={24} color="#EBF0E6" />
+                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="ellipsis-horizontal" size={16} color="#EBF0E6" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.folderCardTitle}>Team Meeting Notes & Updates</Text>
+                  <Text style={styles.folderCardSubtitle}>Tasks On Time • Meeting Goals</Text>
+                  <Text style={styles.folderCardDate}>20 Oct 2025</Text>
+                </View>
+
+                {/* Dark Slate Folder Card */}
+                <View style={[styles.folderCardLarge, { backgroundColor: '#2C3038' }]}>
+                  <View style={styles.folderCardTop}>
+                    <Ionicons name="folder" size={24} color="#F3F4F6" />
+                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="ellipsis-horizontal" size={16} color="#F3F4F6" />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.folderCardTitle}>Project Meeting Summary</Text>
+                  <Text style={styles.folderCardSubtitle}>Tasks On Time • Meeting Goals</Text>
+                  <Text style={styles.folderCardDate}>20 Oct 2025</Text>
+                </View>
+              </ScrollView>
+            </View>
+
+            {/* 4. MY FOLDERS SECTION */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>My Folders</Text>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subFoldersScroll}>
+              {SAMPLE_FOLDERS.map((folder) => {
+                const isActive = activeFolderId === folder.id;
+                return (
+                  <TouchableOpacity
+                    key={folder.id}
+                    onPress={() => setActiveFolderId(isActive ? null : folder.id)}
+                    style={[
+                      styles.subFolderCard,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: isActive ? colors.coral : colors.border,
+                      },
+                    ]}>
+                    <View style={[styles.subFolderIconWell, { backgroundColor: folder.color }]}>
+                      <Ionicons name="folder" size={18} color={folder.iconColor} />
+                    </View>
+                    <Text style={[styles.subFolderName, { color: colors.text }]} numberOfLines={1}>
+                      {folder.name}
+                    </Text>
+                    <Text style={[styles.subFolderSize, { color: colors.textSecondary }]}>
+                      {folder.size}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {/* 5. RECENT FILES SECTION */}
+            <View style={styles.sectionHeaderRow}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Files</Text>
+            </View>
+
+            <View style={styles.recentFilesList}>
+              {RECENT_FILES.map((file) => (
+                <View
+                  key={file.id}
+                  style={[styles.recentFileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={[styles.fileTypeBadge, { backgroundColor: file.type === 'mp4' ? colors.coralLight : colors.surfaceContainer }]}>
+                    <Text style={[styles.fileTypeText, { color: file.type === 'mp4' ? colors.coral : colors.text }]}>
+                      {file.type.toUpperCase()}
+                    </Text>
+                  </View>
+
+                  <View style={styles.recentFileDetails}>
+                    <Text style={[styles.recentFileName, { color: colors.text }]} numberOfLines={1}>
+                      {file.name}
+                    </Text>
+                    <Text style={[styles.recentFileMeta, { color: colors.textSecondary }]}>
+                      {file.size} • {file.date}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity onPress={() => handleShareFile(file.name)} style={styles.fileShareBtn}>
+                    <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+
+        {/* 6. MEETING RECORDINGS & NOTES LIST */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Meeting Notes</Text>
+          <Text style={[styles.countBadge, { color: colors.textSecondary }]}>
+            {filteredRecordings.length} {filteredRecordings.length === 1 ? 'note' : 'notes'}
+          </Text>
+        </View>
+
         {filteredRecordings.length === 0 ? (
-          <View style={[styles.emptyContainer, { backgroundColor: colors.surfaceContainerLow, borderColor: colors.outlineVariant }]}>
-            <View style={[styles.emptyIconCircle, { backgroundColor: colors.surfaceContainerHigh }]}>
+          <View style={[styles.emptyContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: colors.surfaceContainer }]}>
               <Ionicons name="document-text-outline" size={32} color={colors.primary} />
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.onSurface }]}>No notes found</Text>
-            <Text style={[styles.emptySubtitle, { color: colors.onSurfaceVariant }]}>
-              {isFiltering ? 'Try adjusting your search query or filters.' : 'Record a meeting to generate structured notes.'}
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No notes found</Text>
+            <Text style={[styles.emptySubtitle, { color: colors.textSecondary }]}>
+              Try adjusting your search query or filters.
             </Text>
-            {isFiltering && (
-              <TouchableOpacity
-                onPress={resetFilters}
-                style={[styles.m3TonalBtn, { backgroundColor: colors.secondaryContainer }]}>
-                <Text style={[styles.m3TonalBtnText, { color: colors.onSecondaryContainer }]}>Reset Filters</Text>
-              </TouchableOpacity>
-            )}
           </View>
         ) : (
           filteredRecordings.map((rec) => {
@@ -265,32 +405,26 @@ export default function NotesScreen() {
               <TouchableOpacity
                 key={rec.id}
                 onPress={() => router.push({ pathname: '/notes/[id]', params: { id: rec.id } })}
-                style={[
-                  styles.m3NoteCard,
-                  {
-                    backgroundColor: colors.surfaceContainerLow,
-                    borderColor: colors.outlineVariant,
-                  },
-                ]}>
+                style={[styles.noteCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
                 {/* Meta Row */}
                 <View style={styles.cardMetaRow}>
-                  <Text style={[styles.dateText, { color: colors.onSurfaceVariant }]}>
+                  <Text style={[styles.dateText, { color: colors.textSecondary }]}>
                     {formatDateLabel(rec.createdAt)}
                   </Text>
 
                   <View style={styles.cardBadgesRow}>
                     {rec.durationSeconds > 0 && (
-                      <View style={[styles.audioPill, { backgroundColor: colors.surfaceContainerHigh }]}>
-                        <Ionicons name="volume-medium-outline" size={11} color={colors.onSurfaceVariant} />
-                        <Text style={[styles.audioPillText, { color: colors.onSurfaceVariant }]}>
+                      <View style={[styles.audioPill, { backgroundColor: colors.surfaceContainer }]}>
+                        <Ionicons name="volume-medium-outline" size={11} color={colors.textSecondary} />
+                        <Text style={[styles.audioPillText, { color: colors.textSecondary }]}>
                           {formatDuration(rec.durationSeconds)}
                         </Text>
                       </View>
                     )}
                     {actionCount > 0 && (
-                      <View style={[styles.actionPill, { backgroundColor: colors.tertiaryContainer }]}>
-                        <Ionicons name="checkbox-outline" size={11} color={colors.onTertiaryContainer} />
-                        <Text style={[styles.actionPillText, { color: colors.onTertiaryContainer }]}>
+                      <View style={[styles.actionPill, { backgroundColor: colors.oliveLight }]}>
+                        <Ionicons name="checkbox-outline" size={11} color={colors.olive} />
+                        <Text style={[styles.actionPillText, { color: colors.olive }]}>
                           {completedCount}/{actionCount} tasks
                         </Text>
                       </View>
@@ -299,17 +433,17 @@ export default function NotesScreen() {
                 </View>
 
                 {/* Title */}
-                <Text style={[styles.cardTitle, { color: colors.onSurface }]} numberOfLines={2}>
+                <Text style={[styles.cardTitle, { color: colors.text }]} numberOfLines={2}>
                   {rec.meetingTitle}
                 </Text>
 
                 {/* Excerpt */}
                 {rec.summary?.executiveSummary ? (
-                  <Text style={[styles.cardExcerpt, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+                  <Text style={[styles.cardExcerpt, { color: colors.textSecondary }]} numberOfLines={2}>
                     {rec.summary.executiveSummary}
                   </Text>
                 ) : rec.transcript ? (
-                  <Text style={[styles.cardExcerpt, { color: colors.onSurfaceVariant }]} numberOfLines={2}>
+                  <Text style={[styles.cardExcerpt, { color: colors.textSecondary }]} numberOfLines={2}>
                     {rec.transcript}
                   </Text>
                 ) : null}
@@ -318,8 +452,8 @@ export default function NotesScreen() {
                 {rec.tags && rec.tags.length > 0 && (
                   <View style={styles.cardTagsRow}>
                     {rec.tags.map((t) => (
-                      <View key={t} style={[styles.m3TagPill, { backgroundColor: colors.surfaceContainerHigh }]}>
-                        <Text style={[styles.m3TagPillText, { color: colors.onSurfaceVariant }]}>#{t}</Text>
+                      <View key={t} style={[styles.tagPill, { backgroundColor: colors.surfaceContainer }]}>
+                        <Text style={[styles.tagPillText, { color: colors.textSecondary }]}>#{t}</Text>
                       </View>
                     ))}
                   </View>
@@ -342,52 +476,68 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 4,
     backgroundColor: 'transparent',
   },
-  titleRow: {
+  avatarCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  avatarInitials: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#3D2E00',
+  },
+  headerRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
     backgroundColor: 'transparent',
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  countChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  countChipText: {
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  m3FabSmall: {
+  recordFab: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  m3FabSmallText: {
+  recordFabText: {
+    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  titleSection: {
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: 'transparent',
+  },
+  screenTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    letterSpacing: -0.5,
   },
   searchWrapper: {
     paddingHorizontal: 20,
     marginBottom: 10,
     backgroundColor: 'transparent',
   },
-  m3SearchBar: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 48,
-    borderRadius: 24,
-    paddingHorizontal: 16,
+    height: 46,
+    borderRadius: 23,
+    paddingHorizontal: 14,
+    borderWidth: 1,
   },
   searchIcon: {
     marginRight: 8,
@@ -395,40 +545,166 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 13,
+    fontWeight: '500',
   },
   chipsContainer: {
-    marginBottom: 10,
+    marginBottom: 12,
     backgroundColor: 'transparent',
   },
   chipsScroll: {
     paddingHorizontal: 20,
     gap: 8,
   },
-  m3FilterChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
+  filterChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
     borderWidth: 1,
   },
-  m3FilterChipText: {
+  filterChipText: {
     fontSize: 12,
     fontWeight: '600',
   },
-  listContent: {
+  scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+  },
+  carouselContainer: {
+    marginHorizontal: -20,
+    marginBottom: 16,
+    backgroundColor: 'transparent',
+  },
+  carouselScroll: {
+    paddingHorizontal: 20,
     gap: 12,
   },
-  m3NoteCard: {
+  folderCardLarge: {
+    width: 200,
+    borderRadius: 22,
+    padding: 18,
+    minHeight: 140,
+    justifyContent: 'space-between',
+  },
+  folderCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  folderCardTitle: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 20,
+    marginTop: 10,
+  },
+  folderCardSubtitle: {
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 11,
+    marginTop: 2,
+  },
+  folderCardDate: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    marginBottom: 10,
+    backgroundColor: 'transparent',
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  countBadge: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  subFoldersScroll: {
+    gap: 10,
+    paddingBottom: 6,
+  },
+  subFolderCard: {
+    width: 110,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+  },
+  subFolderIconWell: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  subFolderName: {
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  subFolderSize: {
+    fontSize: 10,
+  },
+  recentFilesList: {
+    gap: 8,
+    marginBottom: 10,
+    backgroundColor: 'transparent',
+  },
+  recentFileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+  },
+  fileTypeBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  fileTypeText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  recentFileDetails: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
+  recentFileName: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  recentFileMeta: {
+    fontSize: 11,
+  },
+  fileShareBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noteCard: {
     borderRadius: 20,
     borderWidth: 1,
     padding: 16,
+    marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 6,
   },
   cardMetaRow: {
@@ -452,9 +728,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   audioPillText: {
     fontSize: 10,
@@ -464,20 +740,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   actionPillText: {
     fontSize: 10,
     fontWeight: '700',
   },
   cardTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
     marginBottom: 6,
-    lineHeight: 22,
+    lineHeight: 21,
   },
   cardExcerpt: {
     fontSize: 13,
@@ -490,22 +766,22 @@ const styles = StyleSheet.create({
     gap: 6,
     backgroundColor: 'transparent',
   },
-  m3TagPill: {
+  tagPill: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
-  m3TagPillText: {
+  tagPillText: {
     fontSize: 11,
     fontWeight: '500',
   },
   emptyContainer: {
-    borderRadius: 24,
+    borderRadius: 20,
     borderWidth: 1,
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 10,
   },
   emptyIconCircle: {
     width: 56,
@@ -524,15 +800,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
-    marginBottom: 16,
-  },
-  m3TonalBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  m3TonalBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
   },
 });

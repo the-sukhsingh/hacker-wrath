@@ -57,6 +57,11 @@ export default function RecordScreen() {
   const [editingText, setEditingText] = useState<string>('');
   const transcriptScrollRef = useRef<ScrollView | null>(null);
 
+  // MeetaNotes UI Kit Meeting Room state
+  const [recordViewMode, setRecordViewMode] = useState<'room' | 'deck'>('room');
+  const [isMicMuted, setIsMicMuted] = useState<boolean>(false);
+  const [isCameraOff, setIsCameraOff] = useState<boolean>(false);
+
   // Real-time topic recall state
   const [topicMatches, setTopicMatches] = useState<TopicMatchResult[]>([]);
 
@@ -247,18 +252,65 @@ export default function RecordScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background, paddingTop: Math.max(insets.top, 16) }]}>
-      {/* Screen Title Header */}
+      {/* Top Bar with Mode Switcher */}
       <View style={styles.topHeader}>
-        <View>
-          <Text style={[styles.screenTitle, { color: colors.text }]}>Record Audio</Text>
-          <Text style={[styles.screenSub, { color: colors.textSecondary }]}>
-            High-fidelity 16kHz PCM WAV with real-time transcription
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.screenTitle, { color: colors.text }]}>
+            {recordViewMode === 'room' ? 'Live Meeting' : 'Record Audio'}
           </Text>
+          <Text style={[styles.screenSub, { color: colors.textSecondary }]}>
+            {recordViewMode === 'room' ? 'MeetaNotes In-Progress Session' : '16kHz PCM audio & on-device Whisper transcription'}
+          </Text>
+        </View>
+
+        {/* View Mode Switcher Pills */}
+        <View style={[styles.modeToggleGroup, { backgroundColor: colors.surfaceContainer, borderColor: colors.border }]}>
+          <TouchableOpacity
+            onPress={() => setRecordViewMode('room')}
+            style={[
+              styles.modeToggleBtn,
+              recordViewMode === 'room' && { backgroundColor: colors.coral },
+            ]}>
+            <Ionicons
+              name="videocam"
+              size={13}
+              color={recordViewMode === 'room' ? '#FFFFFF' : colors.textSecondary}
+              style={{ marginRight: 4 }}
+            />
+            <Text
+              style={[
+                styles.modeToggleBtnText,
+                { color: recordViewMode === 'room' ? '#FFFFFF' : colors.textSecondary },
+              ]}>
+              Room
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setRecordViewMode('deck')}
+            style={[
+              styles.modeToggleBtn,
+              recordViewMode === 'deck' && { backgroundColor: colors.coral },
+            ]}>
+            <Ionicons
+              name="pulse"
+              size={13}
+              color={recordViewMode === 'deck' ? '#FFFFFF' : colors.textSecondary}
+              style={{ marginRight: 4 }}
+            />
+            <Text
+              style={[
+                styles.modeToggleBtnText,
+                { color: recordViewMode === 'deck' ? '#FFFFFF' : colors.textSecondary },
+              ]}>
+              Deck
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Meeting Selector Anchor */}
+        {/* Target Meeting Selector Anchor */}
         <View style={styles.selectorWrapper}>
           <Text style={[styles.selectorLabel, { color: colors.textSecondary }]}>TARGET MEETING</Text>
           <TouchableOpacity
@@ -267,43 +319,179 @@ export default function RecordScreen() {
             style={[
               styles.meetingSelectorBtn,
               {
-                backgroundColor: colors.surfaceContainerHigh,
-                borderColor: colors.outlineVariant,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
                 opacity: activeRecording.isRecording ? 0.8 : 1,
               },
             ]}>
             <Ionicons
-              name={selectedMeeting ? 'calendar' : 'mic-circle'}
+              name={selectedMeeting ? 'videocam' : 'mic-circle'}
               size={18}
-              color={selectedMeeting ? colors.primary : colors.onSurfaceVariant}
+              color={selectedMeeting ? colors.primary : colors.textSecondary}
             />
             <Text
               numberOfLines={1}
               style={[
                 styles.meetingSelectorText,
-                { color: selectedMeeting ? colors.onSurface : colors.onSurfaceVariant },
+                { color: selectedMeeting ? colors.text : colors.textSecondary },
               ]}>
-              {selectedMeeting ? selectedMeeting.title : 'Ad-hoc Voice Note (No Meeting Linked)'}
+              {selectedMeeting ? selectedMeeting.title : 'Project Kickoff (Live Meeting Linked)'}
             </Text>
             {!activeRecording.isRecording && (
-              <Ionicons name="chevron-down" size={16} color={colors.onSurfaceVariant} />
+              <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
             )}
           </TouchableOpacity>
         </View>
 
-        {/* Recording Deck Card */}
-        <View
-          style={[
-            styles.recordingCard,
-            {
-              backgroundColor: colors.surfaceContainerLow,
-              borderColor: activeRecording.isRecording
-                ? activeRecording.isPaused
-                  ? colors.warning
-                  : colors.error
-                : colors.outlineVariant,
-            },
-          ]}>
+        {/* 1. ROOM VIEW: 2x2 Participant Video Grid + Floating Speech Pill + Dock */}
+        {recordViewMode === 'room' ? (
+          <View style={styles.roomViewContainer}>
+            {/* Top Floating Speech Banner Pill (Matching UI Kit Image 1) */}
+            <View style={[styles.floatingSpeechPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <View style={[styles.speechIconCircle, { backgroundColor: colors.coralLight }]}>
+                <Ionicons name="chatbubble-ellipses" size={14} color={colors.coral} />
+              </View>
+              <Text style={[styles.floatingSpeechText, { color: colors.text }]} numberOfLines={1}>
+                {liveTranscript.length > 0 ? liveTranscript : "We had a meeting with FDC today at 1 PM"}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsEditingTranscript(true)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="expand-outline" size={15} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* 2x2 Video Participant Grid (Matching UI Kit Image 1) */}
+            <View style={styles.participantGrid}>
+              {/* Participant 1: Sherinz Joel */}
+              <View style={[styles.participantTile, { backgroundColor: '#3A4832' }]}>
+                <View style={styles.participantAvatarBig}>
+                  <Text style={styles.participantAvatarInitials}>SJ</Text>
+                </View>
+                <View style={styles.participantMicBadge}>
+                  <Ionicons name="mic" size={12} color="#111827" />
+                </View>
+                <View style={styles.participantNameBadge}>
+                  <Text style={styles.participantNameText}>Sherinz Joel</Text>
+                </View>
+              </View>
+
+              {/* Participant 2: Jasmine Wild */}
+              <View style={[styles.participantTile, { backgroundColor: '#80503D' }]}>
+                <View style={styles.participantAvatarBig}>
+                  <Text style={styles.participantAvatarInitials}>JW</Text>
+                </View>
+                <View style={styles.participantMicBadge}>
+                  <Ionicons name="mic" size={12} color="#111827" />
+                </View>
+                <View style={styles.participantNameBadge}>
+                  <Text style={styles.participantNameText}>Jasmine Wild</Text>
+                </View>
+              </View>
+
+              {/* Participant 3: Daniel Ross */}
+              <View style={[styles.participantTile, { backgroundColor: '#8C6C26' }]}>
+                <View style={styles.participantAvatarBig}>
+                  <Text style={styles.participantAvatarInitials}>DR</Text>
+                </View>
+                <View style={styles.participantMicBadge}>
+                  <Ionicons name="mic-off" size={12} color="#EF4444" />
+                </View>
+                <View style={styles.participantNameBadge}>
+                  <Text style={styles.participantNameText}>Daniel Ross</Text>
+                </View>
+              </View>
+
+              {/* Participant 4: You (Host) */}
+              <View style={[styles.participantTile, { backgroundColor: isCameraOff ? '#1A1C22' : '#2D4468' }]}>
+                <View style={styles.participantAvatarBig}>
+                  <Text style={styles.participantAvatarInitials}>
+                    {isCameraOff ? 'OFF' : 'YOU'}
+                  </Text>
+                </View>
+                <View style={styles.participantMicBadge}>
+                  <Ionicons
+                    name={isMicMuted ? "mic-off" : "mic"}
+                    size={12}
+                    color={isMicMuted ? "#EF4444" : "#111827"}
+                  />
+                </View>
+                <View style={styles.participantNameBadge}>
+                  <Text style={styles.participantNameText}>You (Host)</Text>
+                </View>
+              </View>
+            </View>
+
+            {/* In-Call Floating Control Dock (UI Kit Image 1) */}
+            <View style={[styles.inCallDock, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <TouchableOpacity
+                onPress={() => setIsMicMuted(!isMicMuted)}
+                style={[styles.dockBtn, isMicMuted && { backgroundColor: '#FEE2E2' }]}>
+                <Ionicons
+                  name={isMicMuted ? "mic-off" : "mic"}
+                  size={20}
+                  color={isMicMuted ? "#EF4444" : colors.text}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setIsCameraOff(!isCameraOff)}
+                style={[styles.dockBtn, isCameraOff && { backgroundColor: '#FEE2E2' }]}>
+                <Ionicons
+                  name={isCameraOff ? "videocam-off" : "videocam"}
+                  size={20}
+                  color={isCameraOff ? "#EF4444" : colors.text}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  const samples = [
+                    'We reviewed the database migration and API gateway response latencies.',
+                    'Hannah noted that project timelines are locked for next Friday.',
+                  ];
+                  const randomSample = samples[Math.floor(Math.random() * samples.length)];
+                  realtimeTranscriptionService.appendSegment(randomSample);
+                  setLiveTranscript((prev) => (prev ? `${prev} ${randomSample}` : randomSample));
+                }}
+                style={styles.dockBtn}>
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setRecordViewMode('deck')}
+                style={styles.dockBtn}>
+                <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={activeRecording.isRecording ? handleStop : handleStart}
+                style={[
+                  styles.endCallBtn,
+                  { backgroundColor: activeRecording.isRecording ? '#E53935' : colors.primary },
+                ]}>
+                <Ionicons
+                  name={activeRecording.isRecording ? "call" : "radio"}
+                  size={20}
+                  color="#FFFFFF"
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          /* 2. AUDIO DECK & WAVEFORM VIEW */
+          <View
+            style={[
+              styles.recordingCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: activeRecording.isRecording
+                  ? activeRecording.isPaused
+                    ? colors.warning
+                    : colors.coral
+                  : colors.border,
+              },
+            ]}>
           {/* Active Status Badge */}
           <View style={styles.statusFlagRow}>
             <View
@@ -516,6 +704,7 @@ export default function RecordScreen() {
             </TouchableOpacity>
           )}
         </View>
+        )}
       </ScrollView>
 
       {/* Meeting Picker Modal */}
@@ -826,9 +1015,147 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 20,
     paddingBottom: 10,
     backgroundColor: 'transparent',
+  },
+  modeToggleGroup: {
+    flexDirection: 'row',
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 3,
+    gap: 4,
+  },
+  modeToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  modeToggleBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  roomViewContainer: {
+    width: '100%',
+    maxWidth: 420,
+    gap: 16,
+    backgroundColor: 'transparent',
+  },
+  floatingSpeechPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 1,
+    gap: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+  },
+  speechIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatingSpeechText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 16,
+  },
+  participantGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    justifyContent: 'space-between',
+    backgroundColor: 'transparent',
+  },
+  participantTile: {
+    width: '48%',
+    aspectRatio: 1.1,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  participantAvatarBig: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  participantAvatarInitials: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  participantMicBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+  },
+  participantNameBadge: {
+    position: 'absolute',
+    bottom: 10,
+    left: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+  },
+  participantNameText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  inCallDock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    borderRadius: 32,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    marginTop: 6,
+  },
+  dockBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  endCallBtn: {
+    width: 52,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   screenTitle: {
     fontSize: 26,
