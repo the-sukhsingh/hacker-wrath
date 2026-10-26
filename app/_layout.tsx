@@ -2,10 +2,12 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
+import { LogBox } from 'react-native';
 import 'react-native-reanimated';
 import * as WebBrowser from 'expo-web-browser';
 import { useColorScheme } from '@/components/useColorScheme';
 
+LogBox.ignoreAllLogs(true);
 WebBrowser.maybeCompleteAuthSession();
 
 export {
@@ -48,8 +50,10 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme} >
+      <Stack screenOptions={{
+        headerTransparent: true
+      }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="meeting/[id]" options={{ presentation: 'card', headerShown: true }} />
         <Stack.Screen name="notes/[id]" options={{ presentation: 'card', headerShown: false }} />
