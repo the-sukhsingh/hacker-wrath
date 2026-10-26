@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text, View } from '@/components/Themed';
@@ -24,6 +25,7 @@ export default function SettingsScreen() {
     updateSettings,
     recordings,
     meetings,
+    loadDemoData,
     clearAllRecordings,
     eraseAllData,
   } = useMeetingStore();
@@ -197,6 +199,16 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.actionButtonsList}>
+            <TouchableOpacity
+              onPress={() => {
+                loadDemoData();
+                Alert.alert('Demo Meeting Loaded', 'A sample meeting has been added to your calendar.');
+              }}
+              style={[styles.outlineActionBtn, { borderColor: colors.cardBorder, marginBottom: 8 }]}>
+              <Ionicons name="sparkles-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+              <Text style={[styles.outlineActionBtnText, { color: colors.primary }]}>Load Sample Meeting</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               onPress={() => setConfirmClearRecOpen(true)}
               style={[styles.outlineActionBtn, { borderColor: colors.cardBorder }]}>

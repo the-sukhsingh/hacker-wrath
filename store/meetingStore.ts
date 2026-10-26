@@ -49,182 +49,9 @@ const getRelativeDateStr = (daysOffset: number = 0): string => {
   return formatLocalDate(d);
 };
 
-const INITIAL_MEETINGS: Meeting[] = [
-  {
-    id: 'meet-ongoing',
-    title: 'Project Kickoff',
-    date: getRelativeDateStr(0),
-    startTime: '09:30 AM',
-    endTime: '10:30 AM',
-    durationMinutes: 60,
-    platform: 'google_meet',
-    meetingUrl: 'https://meetanotes.io/kickoff-q4',
-    attendees: ['Daniel Ross', 'Hannah Lee', 'Sarah Adams', 'Alex Chen', 'Maya Putri'],
-    agenda: 'Align product scope, introduce key stakeholders, and define milestone deliverables.',
-    source: 'manual',
-    status: 'in_progress',
-    recordingIds: [],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'meet-product-sync',
-    title: 'Product Sync: Weekly Priorities Update Brief',
-    date: getRelativeDateStr(0),
-    startTime: '10:00 AM',
-    endTime: '10:30 AM',
-    durationMinutes: 30,
-    platform: 'google_meet',
-    meetingUrl: 'https://meetanotes.io/hjwhgk72p',
-    attendees: ['Hannah Lee', 'Daniel Ross', 'Sarah Adams'],
-    agenda: 'Review weekly roadmap priorities, unblock design dependencies, and sync with engineering.',
-    source: 'google_calendar',
-    status: 'upcoming',
-    recordingIds: [],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'meet-standup',
-    title: 'Development Stand-Up: Feature Update',
-    date: getRelativeDateStr(0),
-    startTime: '12:00 PM',
-    endTime: '12:30 PM',
-    durationMinutes: 30,
-    platform: 'google_meet',
-    meetingUrl: 'https://meetanotes.io/q82hdjs91k',
-    attendees: ['Daniel Ross', 'Alex Chen', 'Maya Putri', 'Sarah Adams'],
-    agenda: 'Stand-up on Whisper engine integration, mobile audio buffer improvements, and QA testing.',
-    source: 'google_calendar',
-    status: 'upcoming',
-    recordingIds: [],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'meet-engineering-align',
-    title: 'Engineering Alignment: Sprint Touchpoint Status Review',
-    date: getRelativeDateStr(0),
-    startTime: '02:00 PM',
-    endTime: '02:40 PM',
-    durationMinutes: 40,
-    platform: 'google_meet',
-    meetingUrl: 'https://meetanotes.io/82hdjs9',
-    attendees: ['Alex Chen', 'Sherinz Joel', 'Jasmine Wild'],
-    agenda: 'Sprint architecture alignment and on-device machine learning inference profiling.',
-    source: 'outlook',
-    status: 'upcoming',
-    recordingIds: [],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'meet-backend-review',
-    title: 'Backend System Review',
-    date: getRelativeDateStr(0),
-    startTime: '10:00 AM',
-    endTime: '10:30 AM',
-    durationMinutes: 30,
-    platform: 'google_meet',
-    meetingUrl: 'https://meetanotes.io/backend-sys',
-    attendees: ['Daniel Ross', 'Alex Chen'],
-    agenda: 'Review API gateway caching and real-time transcription websocket resilience.',
-    source: 'manual',
-    status: 'completed',
-    recordingIds: ['rec-backend-1'],
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 'meet-content-plan',
-    title: 'Content Planning Checklist',
-    date: getRelativeDateStr(0),
-    startTime: '08:00 AM',
-    endTime: '08:35 AM',
-    durationMinutes: 35,
-    platform: 'teams',
-    meetingUrl: 'https://meetanotes.io/content-plan',
-    attendees: ['Hannah Lee', 'Maya Putri'],
-    agenda: 'Review content roadmap and documentation checklists for upcoming release.',
-    source: 'manual',
-    status: 'completed',
-    recordingIds: ['rec-content-1'],
-    createdAt: new Date().toISOString(),
-  },
-];
+const INITIAL_MEETINGS: Meeting[] = [];
 
-const INITIAL_RECORDINGS: Recording[] = [
-  {
-    id: 'rec-backend-1',
-    meetingId: 'meet-backend-review',
-    meetingTitle: 'Backend System Review',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-    durationSeconds: 1800,
-    fileSizeBytes: 57600000,
-    createdAt: new Date().toISOString(),
-    audioFormat: 'wav_16khz_mono',
-    status: 'completed',
-    transcript: 'We reviewed the backend transcription streaming service and verified that end-to-end audio chunking performs reliably with 16kHz mono audio. Daniel emphasized that project timelines are locked for next Friday.',
-    summary: {
-      executiveSummary: 'Align priorities with overall project timeline and prepare follow-up tasks for engineering team members.',
-      keyDecisions: [
-        'Locked backend API schema for live audio chunks.',
-        'Enforced strict 16kHz mono sampling across client recorders.',
-      ],
-      actionItems: [
-        { id: 'act-back-1', task: 'Align priorities with overall project timeline', assignee: 'Daniel Ross', done: true },
-        { id: 'act-back-2', task: 'Prepare follow-up tasks for team members', assignee: 'Hannah Lee', done: false },
-      ],
-    },
-    notes: '### Discussion Summary\n- Timeline is on track for Q4 release.\n- Follow up with Alex on memory profiling.',
-    tags: ['Backend', 'Engineering', 'Timeline'],
-  },
-  {
-    id: 'rec-content-1',
-    meetingId: 'meet-content-plan',
-    meetingTitle: 'Content Planning Checklist',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    durationSeconds: 2100,
-    fileSizeBytes: 67200000,
-    createdAt: new Date().toISOString(),
-    audioFormat: 'wav_16khz_mono',
-    status: 'completed',
-    transcript: 'Hannah walked through the content assets and styleguide components required for the mobile release.',
-    summary: {
-      executiveSummary: 'Finalized mobile app UI kit copy, checklist definitions, and release notes for marketing campaign.',
-      keyDecisions: [
-        'Approve Lokanaka Studio Figma tokens for production theme.',
-        'Schedule release announcement for Monday.',
-      ],
-      actionItems: [
-        { id: 'act-cont-1', task: 'Review copy drafts for mobile landing page', assignee: 'Hannah Lee', done: true },
-        { id: 'act-cont-2', task: 'Finalize sprint backlog for release v1.2', assignee: 'Daniel Ross', done: false },
-      ],
-    },
-    notes: '### Content Highlights\n- All screens match the 4-part Figma UI kit.',
-    tags: ['Content', 'Design', 'Checklist'],
-  },
-  {
-    id: 'rec-sample-1',
-    meetingId: undefined,
-    meetingTitle: 'Q4 AI Architecture & Whisper Engine Strategy',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    durationSeconds: 1680,
-    fileSizeBytes: 53760000,
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-    audioFormat: 'wav_16khz_mono',
-    status: 'completed',
-    transcript: 'We began the session by reviewing our speech-to-text benchmark metrics. On-device inference with Whisper tiny gives us sub-second latency while guaranteeing absolute privacy because no audio packets ever touch the public internet.',
-    summary: {
-      executiveSummary: 'Reviewed on-device Whisper model performance, verified zero data-leak guarantees for privacy-conscious enterprise users, and confirmed 16kHz mono audio standard.',
-      keyDecisions: [
-        'Selected Whisper tiny as default model for on-device real-time transcription.',
-        'Enforced strict local device cache for meeting notes and transcripts.',
-      ],
-      actionItems: [
-        { id: 'act-1-1', task: 'Run Whisper benchmark on physical devices', assignee: 'Alex Chen', done: true },
-        { id: 'act-1-2', task: 'Optimize mono WAV buffer allocation for low memory devices', assignee: 'Sarah Connor', done: false },
-      ],
-    },
-    notes: '### Architecture Notes\n- Offline-first execution ensures privacy compliance.',
-    tags: ['Architecture', 'Whisper', 'On-Device'],
-  },
-];
+const INITIAL_RECORDINGS: Recording[] = [];
 
 const INITIAL_DOWNLOADED_MODELS: Record<string, DownloadedModelRecord> = {
   'ggml-tiny.en.bin': {
@@ -330,6 +157,7 @@ interface MeetingStoreState {
 
   // Settings & Data Management
   updateSettings: (updates: Partial<UserSettings>) => void;
+  loadDemoData: () => void;
   clearAllRecordings: () => void;
   eraseAllData: () => void;
 }
@@ -625,6 +453,29 @@ export const useMeetingStore = create<MeetingStoreState>((set, get) => ({
     set((state) => ({
       settings: { ...state.settings, ...updates },
     }));
+  },
+
+  loadDemoData: () => {
+    set({
+      meetings: [
+        {
+          id: `meet-demo-${Date.now()}`,
+          title: 'Project Kickoff & Roadmap',
+          date: formatLocalDate(new Date()),
+          startTime: '10:00 AM',
+          endTime: '11:00 AM',
+          durationMinutes: 60,
+          platform: 'google_meet',
+          meetingUrl: 'https://meetanotes.io/kickoff',
+          attendees: ['Daniel Ross', 'Hannah Lee', 'Sarah Adams'],
+          agenda: 'Align product scope, milestones, and deliverables.',
+          source: 'manual',
+          status: 'upcoming',
+          recordingIds: [],
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    });
   },
 
   clearAllRecordings: () => {

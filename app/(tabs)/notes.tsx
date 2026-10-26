@@ -16,35 +16,6 @@ import { useColorScheme } from '@/components/useColorScheme';
 
 type FilterCategory = 'all' | 'actions' | 'audio';
 
-interface SampleFolder {
-  id: string;
-  name: string;
-  size: string;
-  color: string;
-  iconColor: string;
-}
-
-interface RecentFile {
-  id: string;
-  name: string;
-  size: string;
-  type: 'mp4' | 'pdf' | 'wav';
-  date: string;
-}
-
-const SAMPLE_FOLDERS: SampleFolder[] = [
-  { id: 'f-1', name: 'Project Beta', size: '13.5 mb', color: '#EBF0E6', iconColor: '#4D5C3B' },
-  { id: 'f-2', name: 'Team Collab', size: '12.2 mb', color: '#FDF4F2', iconColor: '#E06D53' },
-  { id: 'f-3', name: 'Sprint Review', size: '9.4 mb', color: '#FEF3D6', iconColor: '#F5C242' },
-  { id: 'f-4', name: 'Archived Notes', size: '28.1 mb', color: '#EDE9FE', iconColor: '#7C3AED' },
-];
-
-const RECENT_FILES: RecentFile[] = [
-  { id: 'file-1', name: 'Project Portfolio v2', size: '3.5 mb', type: 'mp4', date: 'Today' },
-  { id: 'file-2', name: 'Progress Report 2025', size: '2.1 mb', type: 'pdf', date: 'Yesterday' },
-  { id: 'file-3', name: 'Strategy Planning Session', size: '4.8 mb', type: 'wav', date: 'Oct 24' },
-];
-
 export default function NotesScreen() {
   const router = useRouter();
   const theme = useColorScheme();
@@ -278,103 +249,62 @@ export default function NotesScreen() {
         contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 90, 100) }]}
         showsVerticalScrollIndicator={false}>
         
-        {/* 3. FEATURED FOLDERS CAROUSEL (From UI Kit Image 1 & 4) */}
-        {!searchQuery && (
+        {recordings.length === 0 ? (
+          <View style={[styles.emptyStateContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.emptyIconCircleLarge, { backgroundColor: colors.coralLight }]}>
+              <Ionicons name="document-text-outline" size={36} color={colors.primary} />
+            </View>
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>No Meeting Notes Yet</Text>
+            <Text style={[styles.emptyStateSubtitle, { color: colors.textSecondary }]}>
+              Start an audio recording or take quick notes during a meeting. Your transcripts, summaries, and action checklists will be organized here.
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/record')}
+              style={[styles.recordCtaBtn, { backgroundColor: colors.primary }]}>
+              <Ionicons name="mic" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.recordCtaBtnText}>Start First Recording</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
           <>
-            <View style={styles.carouselContainer}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.carouselScroll}>
-                {/* Olive Green Folder Card */}
-                <View style={[styles.folderCardLarge, { backgroundColor: colors.olive }]}>
-                  <View style={styles.folderCardTop}>
-                    <Ionicons name="folder" size={24} color="#EBF0E6" />
-                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="ellipsis-horizontal" size={16} color="#EBF0E6" />
+            {/* Recent Audio Recordings */}
+            {!searchQuery && recordings.length > 0 && (
+              <>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Recordings</Text>
+                </View>
+
+                <View style={styles.recentFilesList}>
+                  {recordings.slice(0, 3).map((rec) => (
+                    <TouchableOpacity
+                      key={rec.id}
+                      onPress={() => router.push({ pathname: '/notes/[id]', params: { id: rec.id } })}
+                      style={[styles.recentFileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                      <View style={[styles.fileTypeBadge, { backgroundColor: colors.coralLight }]}>
+                        <Text style={[styles.fileTypeText, { color: colors.coral }]}>
+                          {rec.audioFormat.includes('wav') ? 'WAV' : 'REC'}
+                        </Text>
+                      </View>
+
+                      <View style={styles.recentFileDetails}>
+                        <Text style={[styles.recentFileName, { color: colors.text }]} numberOfLines={1}>
+                          {rec.meetingTitle}
+                        </Text>
+                        <Text style={[styles.recentFileMeta, { color: colors.textSecondary }]}>
+                          {(rec.fileSizeBytes / (1024 * 1024)).toFixed(1)} MB • {formatDateLabel(rec.createdAt)}
+                        </Text>
+                      </View>
+
+                      <TouchableOpacity
+                        onPress={() => handleShareFile(rec.meetingTitle)}
+                        style={styles.fileShareBtn}>
+                        <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
+                      </TouchableOpacity>
                     </TouchableOpacity>
-                  </View>
-                  <Text style={styles.folderCardTitle}>Team Meeting Notes & Updates</Text>
-                  <Text style={styles.folderCardSubtitle}>Tasks On Time • Meeting Goals</Text>
-                  <Text style={styles.folderCardDate}>20 Oct 2025</Text>
+                  ))}
                 </View>
-
-                {/* Dark Slate Folder Card */}
-                <View style={[styles.folderCardLarge, { backgroundColor: '#2C3038' }]}>
-                  <View style={styles.folderCardTop}>
-                    <Ionicons name="folder" size={24} color="#F3F4F6" />
-                    <TouchableOpacity hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                      <Ionicons name="ellipsis-horizontal" size={16} color="#F3F4F6" />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.folderCardTitle}>Project Meeting Summary</Text>
-                  <Text style={styles.folderCardSubtitle}>Tasks On Time • Meeting Goals</Text>
-                  <Text style={styles.folderCardDate}>20 Oct 2025</Text>
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* 4. MY FOLDERS SECTION */}
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>My Folders</Text>
-            </View>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subFoldersScroll}>
-              {SAMPLE_FOLDERS.map((folder) => {
-                const isActive = activeFolderId === folder.id;
-                return (
-                  <TouchableOpacity
-                    key={folder.id}
-                    onPress={() => setActiveFolderId(isActive ? null : folder.id)}
-                    style={[
-                      styles.subFolderCard,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: isActive ? colors.coral : colors.border,
-                      },
-                    ]}>
-                    <View style={[styles.subFolderIconWell, { backgroundColor: folder.color }]}>
-                      <Ionicons name="folder" size={18} color={folder.iconColor} />
-                    </View>
-                    <Text style={[styles.subFolderName, { color: colors.text }]} numberOfLines={1}>
-                      {folder.name}
-                    </Text>
-                    <Text style={[styles.subFolderSize, { color: colors.textSecondary }]}>
-                      {folder.size}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-
-            {/* 5. RECENT FILES SECTION */}
-            <View style={styles.sectionHeaderRow}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Recent Files</Text>
-            </View>
-
-            <View style={styles.recentFilesList}>
-              {RECENT_FILES.map((file) => (
-                <View
-                  key={file.id}
-                  style={[styles.recentFileCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <View style={[styles.fileTypeBadge, { backgroundColor: file.type === 'mp4' ? colors.coralLight : colors.surfaceContainer }]}>
-                    <Text style={[styles.fileTypeText, { color: file.type === 'mp4' ? colors.coral : colors.text }]}>
-                      {file.type.toUpperCase()}
-                    </Text>
-                  </View>
-
-                  <View style={styles.recentFileDetails}>
-                    <Text style={[styles.recentFileName, { color: colors.text }]} numberOfLines={1}>
-                      {file.name}
-                    </Text>
-                    <Text style={[styles.recentFileMeta, { color: colors.textSecondary }]}>
-                      {file.size} • {file.date}
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity onPress={() => handleShareFile(file.name)} style={styles.fileShareBtn}>
-                    <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
+              </>
+            )}
           </>
         )}
 
@@ -800,5 +730,45 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  emptyStateContainer: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  emptyIconCircleLarge: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  emptyStateSubtitle: {
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+    maxWidth: 280,
+  },
+  recordCtaBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  recordCtaBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

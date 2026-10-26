@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { useMeetingStore } from '@/store/meetingStore';
 import { MeetingCard } from '@/components/MeetingCard';
 import { MeetingInviteModal } from '@/components/MeetingInviteModal';
+import { ManualMeetingModal } from '@/components/ManualMeetingModal';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Meeting } from '@/types/meeting';
@@ -31,12 +32,14 @@ export default function HomeScreen() {
     activeRecording,
     settings,
     quickNote,
+    addMeeting,
     updateQuickNote,
     toggleActionItem,
     startRecordingSession,
   } = useMeetingStore();
 
   const [inviteMeeting, setInviteMeeting] = useState<Meeting | null>(null);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
   const [quickNoteModalVisible, setQuickNoteModalVisible] = useState(false);
   const [quickNoteDraft, setQuickNoteDraft] = useState(quickNote);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
@@ -46,12 +49,12 @@ export default function HomeScreen() {
     if (activeRecording.isRecording && activeRecording.meetingId) {
       return meetings.find((m) => m.id === activeRecording.meetingId);
     }
-    return meetings.find((m) => m.status === 'in_progress') || meetings[0];
+    return meetings.find((m) => m.status === 'in_progress');
   }, [meetings, activeRecording]);
 
   // Next meeting detection
   const nextMeeting = useMemo(() => {
-    return meetings.find((m) => m.status === 'upcoming') || meetings[1];
+    return meetings.find((m) => m.status === 'upcoming');
   }, [meetings]);
 
   // Highlights from today (recordings that contain action items)
@@ -61,8 +64,8 @@ export default function HomeScreen() {
 
   // Remaining upcoming meetings
   const upcomingMeetingsList = useMemo(() => {
-    return meetings.filter((m) => m.id !== ongoingMeeting?.id).slice(0, 3);
-  }, [meetings, ongoingMeeting]);
+    return meetings.filter((m) => m.id !== ongoingMeeting?.id && m.id !== nextMeeting?.id).slice(0, 3);
+  }, [meetings, ongoingMeeting, nextMeeting]);
 
   const handleStartRecording = useCallback((meeting?: Meeting) => {
     if (meeting) {
@@ -149,13 +152,13 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 2. ONGOING MEETING CARD */}
-        {ongoingMeeting && (
+        {/* 2. ONGOING MEETING / CAPTURE HERO CARD */}
+        {ongoingMeeting || activeRecording.isRecording ? (
           <Pressable
             onPress={() => {
               if (activeRecording.isRecording) {
                 router.push('/record');
-              } else {
+              } else if (ongoingMeeting) {
                 router.push({ pathname: '/meeting/[id]', params: { id: ongoingMeeting.id } });
               }
             }}
@@ -168,9 +171,13 @@ export default function HomeScreen() {
               },
             ]}>
             <View style={styles.ongoingCardContent}>
-              {/* Left Video Icon Badge */}
+              {/* Left Video/Mic Icon Badge */}
               <View style={[styles.videoIconWell, { backgroundColor: colors.coralLight }]}>
-                <Ionicons name="videocam" size={20} color={colors.coral} />
+                <Ionicons
+                  name={activeRecording.isRecording ? 'mic' : 'videocam'}
+                  size={20}
+                  color={colors.coral}
+                />
               </View>
 
               {/* Title & Subtitle */}
@@ -187,21 +194,80 @@ export default function HomeScreen() {
                   )}
                 </View>
                 <Text style={[styles.ongoingTitle, { color: colors.text }]} numberOfLines={1}>
-                  {activeRecording.isRecording ? activeRecording.meetingTitle : ongoingMeeting.title}
+                  {activeRecording.isRecording
+                    ? activeRecording.meetingTitle
+                    : ongoingMeeting?.title || 'Meeting Session'}
                 </Text>
               </View>
 
-              {/* Right Facepile */}
+              {/* Right Facepile or live badge */}
               <View style={styles.ongoingFacepile}>
-                <View style={[styles.miniAvatar, { backgroundColor: '#F5C242', borderColor: colors.surface }]}>
-                  <Text style={styles.miniAvatarText}>DR</Text>
+                {(ongoingMeeting?.attendees || []).slice(0, 2).map((att, idx) => (
+                  <View
+                    key={att}
+                    style={[
+                      styles.miniAvatar,
+                      {
+                        backgroundColor: idx === 0 ? '#F5C242' : '#E06D53',
+                        marginLeft: idx > 0 ? -8 : 0,
+                        borderColor: colors.surface,
+                      },
+                    ]}>
+                    <Text style={styles.miniAvatarText}>
+                      {att.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()}
+                    </Text>
+                  </View>
+                ))}
+                {(ongoingMeeting?.attendees || []).length > 2 && (
+                  <View
+                    style={[
+                      styles.miniAvatarBadge,
+                      {
+                        backgroundColor: colors.surfaceContainerHigh,
+                        marginLeft: -8,
+                        borderColor: colors.surface,
+                      },
+                    ]}>
+                    <Text style={[styles.miniAvatarBadgeText, { color: colors.textSecondary }]}>
+                      +{ongoingMeeting!.attendees.length - 2}
+                    </Text>
+                  </View>
+                )}
+                {(!ongoingMeeting?.attendees || ongoingMeeting.attendees.length === 0) && (
+                  <View style={[styles.quickStartBadge, { backgroundColor: colors.coralLight }]}>
+                    <Ionicons name="play" size={12} color={colors.coral} />
+                  </View>
+                )}
+              </View>
+            </View>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={() => handleStartRecording()}
+            style={({ pressed }) => [
+              styles.ongoingCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                transform: [{ scale: pressed ? 0.985 : 1 }],
+              },
+            ]}>
+            <View style={styles.ongoingCardContent}>
+              <View style={[styles.videoIconWell, { backgroundColor: colors.coralLight }]}>
+                <Ionicons name="mic" size={20} color={colors.coral} />
+              </View>
+
+              <View style={styles.ongoingTextCol}>
+                <View style={styles.ongoingLabelRow}>
+                  <Text style={[styles.ongoingLabel, { color: colors.coral }]}>Capture Discussion</Text>
                 </View>
-                <View style={[styles.miniAvatar, { backgroundColor: '#E06D53', marginLeft: -8, borderColor: colors.surface }]}>
-                  <Text style={styles.miniAvatarText}>SA</Text>
-                </View>
-                <View style={[styles.miniAvatarBadge, { backgroundColor: colors.surfaceContainerHigh, marginLeft: -8, borderColor: colors.surface }]}>
-                  <Text style={[styles.miniAvatarBadgeText, { color: colors.textSecondary }]}>+3</Text>
-                </View>
+                <Text style={[styles.ongoingTitle, { color: colors.text }]} numberOfLines={1}>
+                  Record & Transcribe Notes
+                </Text>
+              </View>
+
+              <View style={[styles.quickStartBadge, { backgroundColor: colors.coral }]}>
+                <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
               </View>
             </View>
           </Pressable>
@@ -212,19 +278,39 @@ export default function HomeScreen() {
           {/* Left Card: Next Meeting */}
           <View style={[styles.splitCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <Text style={[styles.splitCardHeader, { color: colors.textSecondary }]}>Next Meeting</Text>
-            <Text style={[styles.nextMeetingDate, { color: colors.text }]}>
-              Fri, 3 Oct
-            </Text>
-            <Text style={[styles.nextMeetingTime, { color: colors.textSecondary }]}>
-              02:00pm to 03:30pm
-            </Text>
+            {nextMeeting ? (
+              <>
+                <Text style={[styles.nextMeetingDate, { color: colors.text }]} numberOfLines={1}>
+                  {nextMeeting.title}
+                </Text>
+                <Text style={[styles.nextMeetingTime, { color: colors.textSecondary }]}>
+                  {nextMeeting.startTime} ({nextMeeting.durationMinutes}m)
+                </Text>
 
-            <TouchableOpacity
-              onPress={() => handleSetReminder(nextMeeting?.title)}
-              style={[styles.reminderBtn, { backgroundColor: colors.coral }]}>
-              <Ionicons name="time-outline" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
-              <Text style={styles.reminderBtnText}>Set Reminder</Text>
-            </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => handleSetReminder(nextMeeting.title)}
+                  style={[styles.reminderBtn, { backgroundColor: colors.coral }]}>
+                  <Ionicons name="time-outline" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text style={styles.reminderBtnText}>Set Reminder</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={[styles.nextMeetingDate, { color: colors.text }]} numberOfLines={1}>
+                  No upcoming
+                </Text>
+                <Text style={[styles.nextMeetingTime, { color: colors.textSecondary, marginBottom: 8 }]}>
+                  Schedule your session
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setManualModalOpen(true)}
+                  style={[styles.reminderBtn, { backgroundColor: colors.coral }]}>
+                  <Ionicons name="add" size={13} color="#FFFFFF" style={{ marginRight: 4 }} />
+                  <Text style={styles.reminderBtnText}>+ Schedule</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
 
           {/* Right Card: Quick Notes (Olive Green #4D5C3B) */}
@@ -249,7 +335,7 @@ export default function HomeScreen() {
             </View>
 
             <Text style={styles.quickNotesBody} numberOfLines={4}>
-              {quickNote || 'Save a personal reminder about this person...'}
+              {quickNote || 'Save a personal reminder or quick thought...'}
             </Text>
 
             <View style={styles.quickNotesFooter}>
@@ -268,48 +354,62 @@ export default function HomeScreen() {
         </View>
 
         {/* Highlights Checklist Cards */}
-        {todayHighlightRecordings.map((rec) => {
-          return (
-            <View
-              key={rec.id}
-              style={[styles.highlightCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <View style={styles.highlightCardHeader}>
-                <Text style={[styles.highlightTitle, { color: colors.text }]}>{rec.meetingTitle}</Text>
-                <Text style={[styles.highlightMeta, { color: colors.textSecondary }]}>
-                  {rec.meetingTitle.includes('Backend') ? '10:00am • 30min • Daniel Ross' : '08:00am • 35min • Hannah Lee'}
-                </Text>
-              </View>
-
-              {/* Action Item Checklists */}
-              <View style={styles.checklistContainer}>
-                {rec.summary?.actionItems.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    onPress={() => toggleActionItem(rec.id, item.id)}
-                    style={styles.checklistItemRow}>
-                    <View
-                      style={[
-                        styles.checkbox,
-                        item.done
-                          ? { backgroundColor: '#34A853', borderColor: '#34A853' }
-                          : { borderColor: colors.outline },
-                      ]}>
-                      {item.done && <Ionicons name="checkmark" size={13} color="#FFFFFF" />}
-                    </View>
-                    <Text
-                      style={[
-                        styles.checklistText,
-                        { color: item.done ? colors.textMuted : colors.text },
-                        item.done && styles.checklistTextStrikethrough,
-                      ]}>
-                      {item.task}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+        {todayHighlightRecordings.length === 0 ? (
+          <View style={[styles.emptyHighlightCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.emptyHighlightIcon, { backgroundColor: colors.coralLight }]}>
+              <Ionicons name="sparkles" size={18} color={colors.coral} />
             </View>
-          );
-        })}
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.emptyHighlightTitle, { color: colors.text }]}>No highlights yet today</Text>
+              <Text style={[styles.emptyHighlightSub, { color: colors.textSecondary }]}>
+                Record or transcribe a meeting to automatically extract key decisions and action checklists.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          todayHighlightRecordings.map((rec) => {
+            return (
+              <View
+                key={rec.id}
+                style={[styles.highlightCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={styles.highlightCardHeader}>
+                  <Text style={[styles.highlightTitle, { color: colors.text }]}>{rec.meetingTitle}</Text>
+                  <Text style={[styles.highlightMeta, { color: colors.textSecondary }]}>
+                    {rec.summary?.actionItems.length || 0} action items · AI Summary
+                  </Text>
+                </View>
+
+                {/* Action Item Checklists */}
+                <View style={styles.checklistContainer}>
+                  {rec.summary?.actionItems.map((item) => (
+                    <TouchableOpacity
+                      key={item.id}
+                      onPress={() => toggleActionItem(rec.id, item.id)}
+                      style={styles.checklistItemRow}>
+                      <View
+                        style={[
+                          styles.checkbox,
+                          item.done
+                            ? { backgroundColor: '#34A853', borderColor: '#34A853' }
+                            : { borderColor: colors.outline },
+                        ]}>
+                        {item.done && <Ionicons name="checkmark" size={13} color="#FFFFFF" />}
+                      </View>
+                      <Text
+                        style={[
+                          styles.checklistText,
+                          { color: item.done ? colors.textMuted : colors.text },
+                          item.done && styles.checklistTextStrikethrough,
+                        ]}>
+                        {item.task}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            );
+          })
+        )}
 
         {/* 5. SCHEDULED MEETINGS QUICK LIST */}
         <View style={[styles.sectionHeaderRow, { marginTop: 10 }]}>
@@ -319,15 +419,33 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {upcomingMeetingsList.map((m) => (
-          <MeetingCard
-            key={m.id}
-            meeting={m}
-            onPress={() => router.push({ pathname: '/meeting/[id]', params: { id: m.id } })}
-            onRecordPress={() => handleStartRecording(m)}
-            onInvitePress={() => setInviteMeeting(m)}
-          />
-        ))}
+        {upcomingMeetingsList.length === 0 ? (
+          <View style={[styles.emptyUpcomingCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.emptyIconCircle, { backgroundColor: colors.surfaceContainer }]}>
+              <Ionicons name="calendar-outline" size={24} color={colors.primary} />
+            </View>
+            <Text style={[styles.emptyUpcomingTitle, { color: colors.text }]}>No meetings scheduled today</Text>
+            <Text style={[styles.emptyUpcomingSub, { color: colors.textSecondary }]}>
+              Schedule a new meeting or connect your calendar to sync events.
+            </Text>
+            <TouchableOpacity
+              onPress={() => setManualModalOpen(true)}
+              style={[styles.addFirstMeetingPill, { backgroundColor: colors.primary }]}>
+              <Ionicons name="add" size={15} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={styles.addFirstMeetingPillText}>Schedule Meeting</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          upcomingMeetingsList.map((m) => (
+            <MeetingCard
+              key={m.id}
+              meeting={m}
+              onPress={() => router.push({ pathname: '/meeting/[id]', params: { id: m.id } })}
+              onRecordPress={() => handleStartRecording(m)}
+              onInvitePress={() => setInviteMeeting(m)}
+            />
+          ))
+        )}
       </ScrollView>
 
       {/* Quick Note Composer Modal */}
@@ -389,6 +507,16 @@ export default function HomeScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Manual Meeting Scheduling Modal */}
+      <ManualMeetingModal
+        visible={manualModalOpen}
+        onClose={() => setManualModalOpen(false)}
+        onSubmit={(meetingData) => {
+          addMeeting(meetingData);
+          setManualModalOpen(false);
+        }}
+      />
 
       {/* Meeting Invite / Share Modal */}
       <MeetingInviteModal
@@ -806,6 +934,77 @@ const styles = StyleSheet.create({
   modalSaveBtnText: {
     color: '#FFFFFF',
     fontSize: 12,
+    fontWeight: '700',
+  },
+  quickStartBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyHighlightCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 12,
+    marginBottom: 14,
+  },
+  emptyHighlightIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyHighlightTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  emptyHighlightSub: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  emptyUpcomingCard: {
+    alignItems: 'center',
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  emptyIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  emptyUpcomingTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  emptyUpcomingSub: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+    maxWidth: 260,
+  },
+  addFirstMeetingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  addFirstMeetingPillText: {
+    color: '#FFFFFF',
+    fontSize: 13,
     fontWeight: '700',
   },
 });
