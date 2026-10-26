@@ -1,7 +1,8 @@
 /**
- * Google Material Design 3 (Material You / MD3) Color Palette
+ * MeetaNotes UI Kit Color Tokens (Lokanaka Studio)
+ * Warm Terracotta Coral, Forest Moss Olive, Warm Amber, and Organic Cream surfaces.
  * Full semantic token architecture with tonal surface containers,
- * primary/secondary/tertiary container pairs, and dynamic light/dark values.
+ * primary/secondary/tertiary pairs, and dynamic light/dark values.
  */
 
 export interface M3ColorScheme {
@@ -21,13 +22,23 @@ export interface M3ColorScheme {
   tertiaryContainer: string;
   onTertiaryContainer: string;
 
+  // MeetaNotes Specific Accents
+  coral: string;
+  coralLight: string;
+  coralDark: string;
+  olive: string;
+  oliveLight: string;
+  oliveDark: string;
+  oliveText: string;
+  amber: string;
+
   // Feedback
   error: string;
   onError: string;
   errorContainer: string;
   onErrorContainer: string;
 
-  // Material You Surface Hierarchy
+  // Surface Hierarchy
   background: string;
   onBackground: string;
   surface: string;
@@ -45,7 +56,7 @@ export interface M3ColorScheme {
   outline: string;
   outlineVariant: string;
 
-  // Legacy mappings for backwards-compatible component styles
+  // Mappings for component styles
   text: string;
   textSecondary: string;
   textMuted: string;
@@ -67,131 +78,151 @@ export interface M3ColorScheme {
 }
 
 const lightTheme: M3ColorScheme = {
-  // Primary (Google Pixel Blue)
-  primary: '#0B57D0',
+  // Primary (MeetaNotes Terracotta Coral)
+  primary: '#E06D53',
   onPrimary: '#FFFFFF',
-  primaryContainer: '#D3E3FD',
-  onPrimaryContainer: '#041E49',
+  primaryContainer: '#FDF4F2',
+  onPrimaryContainer: '#C8533A',
 
-  // Secondary (Material You Active Pill Cyan/Teal)
-  secondary: '#00639B',
+  // Secondary (Forest Moss Olive Green)
+  secondary: '#4D5C3B',
   onSecondary: '#FFFFFF',
-  secondaryContainer: '#C2E7FF',
-  onSecondaryContainer: '#001D35',
+  secondaryContainer: '#EBF0E6',
+  onSecondaryContainer: '#2D3723',
 
-  // Tertiary (Google AI / Gemma Purple)
-  tertiary: '#7C3AED',
-  onTertiary: '#FFFFFF',
-  tertiaryContainer: '#EDE9FE',
-  onTertiaryContainer: '#2E1065',
+  // Tertiary (Warm Amber Accent)
+  tertiary: '#F5C242',
+  onTertiary: '#3D2E00',
+  tertiaryContainer: '#FEF3D6',
+  onTertiaryContainer: '#5C4500',
 
-  // Error (Google Material Coral Red)
-  error: '#BA1A1A',
+  // Dedicated MeetaNotes Accents
+  coral: '#E06D53',
+  coralLight: '#FDF4F2',
+  coralDark: '#C8533A',
+  olive: '#4D5C3B',
+  oliveLight: '#EBF0E6',
+  oliveDark: '#3A472C',
+  oliveText: '#F4F6F1',
+  amber: '#F5C242',
+
+  // Error (Clean Crimson)
+  error: '#E53935',
   onError: '#FFFFFF',
-  errorContainer: '#FFDAD6',
-  onErrorContainer: '#410002',
+  errorContainer: '#FFEBEE',
+  onErrorContainer: '#5C0A0A',
 
-  // Surface Tonal Hierarchy
-  background: '#F8F9FD',
-  onBackground: '#191C20',
-  surface: '#F8F9FD',
-  onSurface: '#191C20',
-  surfaceVariant: '#DFE2EB',
-  onSurfaceVariant: '#43474E',
+  // Surface Tonal Hierarchy (Warm Cream & Organic White)
+  background: '#FBF9F7',
+  onBackground: '#191A1D',
+  surface: '#FFFFFF',
+  onSurface: '#191A1D',
+  surfaceVariant: '#F3EFEA',
+  onSurfaceVariant: '#686B73',
 
   surfaceContainerLowest: '#FFFFFF',
-  surfaceContainerLow: '#F2F3F8',
-  surfaceContainer: '#ECEDF3',
-  surfaceContainerHigh: '#E6E8EE',
-  surfaceContainerHighest: '#E0E2E8',
+  surfaceContainerLow: '#FFFFFF',
+  surfaceContainer: '#F7F5F2',
+  surfaceContainerHigh: '#EDE9E3',
+  surfaceContainerHighest: '#E4DFD7',
 
-  // Outlines
-  outline: '#73777F',
-  outlineVariant: '#C3C7D0',
+  // Outlines & Borders
+  outline: '#D0CBC4',
+  outlineVariant: 'rgba(0, 0, 0, 0.06)',
 
-  // Legacy mappings
-  text: '#191C20',
-  textSecondary: '#43474E',
-  textMuted: '#73777F',
+  // Semantic Mappings
+  text: '#191A1D',
+  textSecondary: '#686B73',
+  textMuted: '#9EA2AA',
   card: '#FFFFFF',
-  cardBorder: '#E0E2E8',
-  cardHover: '#F2F3F8',
-  tint: '#0B57D0',
-  tabIconDefault: '#73777F',
-  tabIconSelected: '#0B57D0',
-  border: '#E0E2E8',
+  cardBorder: 'rgba(0, 0, 0, 0.06)',
+  cardHover: '#F8F5F1',
+  tint: '#E06D53',
+  tabIconDefault: '#9EA2AA',
+  tabIconSelected: '#E06D53',
+  border: 'rgba(0, 0, 0, 0.06)',
   primaryText: '#FFFFFF',
-  accent: '#0D9488',
-  accentLight: '#CCFBF1',
-  accentBorder: '#99F6E4',
-  danger: '#BA1A1A',
-  dangerLight: '#FFDAD6',
-  warning: '#B45309',
+  accent: '#4D5C3B',
+  accentLight: '#EBF0E6',
+  accentBorder: '#C4D3BB',
+  danger: '#E53935',
+  dangerLight: '#FFEBEE',
+  warning: '#F59E0B',
   warningLight: '#FEF3C7',
 };
 
 const darkTheme: M3ColorScheme = {
-  // Primary (Pixel Night Blue)
-  primary: '#A8C7FA',
-  onPrimary: '#062E6F',
-  primaryContainer: '#0842A0',
-  onPrimaryContainer: '#D3E3FD',
+  // Primary (Warm Coral Night)
+  primary: '#E2725B',
+  onPrimary: '#2C0E07',
+  primaryContainer: '#5C2518',
+  onPrimaryContainer: '#FADCD5',
 
-  // Secondary
-  secondary: '#7FCFFF',
-  onSecondary: '#003453',
-  secondaryContainer: '#004A77',
-  onSecondaryContainer: '#C2E7FF',
+  // Secondary (Muted Forest Olive)
+  secondary: '#7D9465',
+  onSecondary: '#18230F',
+  secondaryContainer: '#2D3820',
+  onSecondaryContainer: '#D9E5CC',
 
-  // Tertiary (AI Purple Night)
-  tertiary: '#C4B5FD',
-  onTertiary: '#3B0764',
-  tertiaryContainer: '#5B21B6',
-  onTertiaryContainer: '#EDE9FE',
+  // Tertiary (Warm Amber Night)
+  tertiary: '#F5C242',
+  onTertiary: '#3D2E00',
+  tertiaryContainer: '#4D3900',
+  onTertiaryContainer: '#FEF3D6',
+
+  // Dedicated MeetaNotes Accents
+  coral: '#E2725B',
+  coralLight: '#3D1B14',
+  coralDark: '#C8533A',
+  olive: '#556844',
+  oliveLight: '#28331E',
+  oliveDark: '#1E2716',
+  oliveText: '#F4F6F1',
+  amber: '#F5C242',
 
   // Error
-  error: '#FFB4AB',
-  onError: '#690005',
-  errorContainer: '#93000A',
-  onErrorContainer: '#FFDAD6',
+  error: '#EF5350',
+  onError: '#3E0808',
+  errorContainer: '#5C1414',
+  onErrorContainer: '#FFCDD2',
 
-  // Surface Tonal Hierarchy
-  background: '#101318',
-  onBackground: '#E1E2E8',
-  surface: '#101318',
-  onSurface: '#E1E2E8',
-  surfaceVariant: '#43474E',
-  onSurfaceVariant: '#C3C7D0',
+  // Surface Tonal Hierarchy (Rich Obsidian & Sleek Charcoal)
+  background: '#121316',
+  onBackground: '#F4F5F7',
+  surface: '#1C1E22',
+  onSurface: '#F4F5F7',
+  surfaceVariant: '#24272D',
+  onSurfaceVariant: '#9DA1AA',
 
-  surfaceContainerLowest: '#0B0E13',
-  surfaceContainerLow: '#191C20',
-  surfaceContainer: '#1D2025',
-  surfaceContainerHigh: '#272A2F',
-  surfaceContainerHighest: '#32353A',
+  surfaceContainerLowest: '#0D0E10',
+  surfaceContainerLow: '#16171B',
+  surfaceContainer: '#1C1E22',
+  surfaceContainerHigh: '#24272D',
+  surfaceContainerHighest: '#2D3038',
 
   // Outlines
-  outline: '#8D9199',
-  outlineVariant: '#43474E',
+  outline: '#484C55',
+  outlineVariant: 'rgba(255, 255, 255, 0.08)',
 
-  // Legacy mappings
-  text: '#E1E2E8',
-  textSecondary: '#C3C7D0',
-  textMuted: '#8D9199',
-  card: '#1D2025',
-  cardBorder: '#272A2F',
-  cardHover: '#272A2F',
-  tint: '#A8C7FA',
-  tabIconDefault: '#8D9199',
-  tabIconSelected: '#A8C7FA',
-  border: '#272A2F',
-  primaryText: '#062E6F',
-  accent: '#2DD4BF',
-  accentLight: '#134E4A40',
-  accentBorder: '#14B8A6',
-  danger: '#FFB4AB',
-  dangerLight: '#93000A40',
+  // Semantic Mappings
+  text: '#F4F5F7',
+  textSecondary: '#9DA1AA',
+  textMuted: '#6E727C',
+  card: '#1C1E22',
+  cardBorder: 'rgba(255, 255, 255, 0.08)',
+  cardHover: '#24272D',
+  tint: '#E2725B',
+  tabIconDefault: '#6E727C',
+  tabIconSelected: '#E2725B',
+  border: 'rgba(255, 255, 255, 0.08)',
+  primaryText: '#FFFFFF',
+  accent: '#7D9465',
+  accentLight: '#2D3820',
+  accentBorder: '#4B5C37',
+  danger: '#EF5350',
+  dangerLight: '#3E1818',
   warning: '#FBBF24',
-  warningLight: '#78350F40',
+  warningLight: '#422006',
 };
 
 export default {

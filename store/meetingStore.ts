@@ -39,90 +39,190 @@ const INITIAL_ACCOUNTS: ConnectedAccount[] = [
   },
 ];
 
-// Start with empty clean state without dummy meetings
-const INITIAL_MEETINGS: Meeting[] = [];
+const formatLocalDate = (d: Date): string => {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const getRelativeDateStr = (daysOffset: number = 0): string => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysOffset);
+  return formatLocalDate(d);
+};
+
+const INITIAL_MEETINGS: Meeting[] = [
+  {
+    id: 'meet-ongoing',
+    title: 'Project Kickoff',
+    date: getRelativeDateStr(0),
+    startTime: '09:30 AM',
+    endTime: '10:30 AM',
+    durationMinutes: 60,
+    platform: 'google_meet',
+    meetingUrl: 'https://meetanotes.io/kickoff-q4',
+    attendees: ['Daniel Ross', 'Hannah Lee', 'Sarah Adams', 'Alex Chen', 'Maya Putri'],
+    agenda: 'Align product scope, introduce key stakeholders, and define milestone deliverables.',
+    source: 'manual',
+    status: 'in_progress',
+    recordingIds: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'meet-product-sync',
+    title: 'Product Sync: Weekly Priorities Update Brief',
+    date: getRelativeDateStr(0),
+    startTime: '10:00 AM',
+    endTime: '10:30 AM',
+    durationMinutes: 30,
+    platform: 'google_meet',
+    meetingUrl: 'https://meetanotes.io/hjwhgk72p',
+    attendees: ['Hannah Lee', 'Daniel Ross', 'Sarah Adams'],
+    agenda: 'Review weekly roadmap priorities, unblock design dependencies, and sync with engineering.',
+    source: 'google_calendar',
+    status: 'upcoming',
+    recordingIds: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'meet-standup',
+    title: 'Development Stand-Up: Feature Update',
+    date: getRelativeDateStr(0),
+    startTime: '12:00 PM',
+    endTime: '12:30 PM',
+    durationMinutes: 30,
+    platform: 'google_meet',
+    meetingUrl: 'https://meetanotes.io/q82hdjs91k',
+    attendees: ['Daniel Ross', 'Alex Chen', 'Maya Putri', 'Sarah Adams'],
+    agenda: 'Stand-up on Whisper engine integration, mobile audio buffer improvements, and QA testing.',
+    source: 'google_calendar',
+    status: 'upcoming',
+    recordingIds: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'meet-engineering-align',
+    title: 'Engineering Alignment: Sprint Touchpoint Status Review',
+    date: getRelativeDateStr(0),
+    startTime: '02:00 PM',
+    endTime: '02:40 PM',
+    durationMinutes: 40,
+    platform: 'google_meet',
+    meetingUrl: 'https://meetanotes.io/82hdjs9',
+    attendees: ['Alex Chen', 'Sherinz Joel', 'Jasmine Wild'],
+    agenda: 'Sprint architecture alignment and on-device machine learning inference profiling.',
+    source: 'outlook',
+    status: 'upcoming',
+    recordingIds: [],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'meet-backend-review',
+    title: 'Backend System Review',
+    date: getRelativeDateStr(0),
+    startTime: '10:00 AM',
+    endTime: '10:30 AM',
+    durationMinutes: 30,
+    platform: 'google_meet',
+    meetingUrl: 'https://meetanotes.io/backend-sys',
+    attendees: ['Daniel Ross', 'Alex Chen'],
+    agenda: 'Review API gateway caching and real-time transcription websocket resilience.',
+    source: 'manual',
+    status: 'completed',
+    recordingIds: ['rec-backend-1'],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'meet-content-plan',
+    title: 'Content Planning Checklist',
+    date: getRelativeDateStr(0),
+    startTime: '08:00 AM',
+    endTime: '08:35 AM',
+    durationMinutes: 35,
+    platform: 'teams',
+    meetingUrl: 'https://meetanotes.io/content-plan',
+    attendees: ['Hannah Lee', 'Maya Putri'],
+    agenda: 'Review content roadmap and documentation checklists for upcoming release.',
+    source: 'manual',
+    status: 'completed',
+    recordingIds: ['rec-content-1'],
+    createdAt: new Date().toISOString(),
+  },
+];
 
 const INITIAL_RECORDINGS: Recording[] = [
+  {
+    id: 'rec-backend-1',
+    meetingId: 'meet-backend-review',
+    meetingTitle: 'Backend System Review',
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    durationSeconds: 1800,
+    fileSizeBytes: 57600000,
+    createdAt: new Date().toISOString(),
+    audioFormat: 'wav_16khz_mono',
+    status: 'completed',
+    transcript: 'We reviewed the backend transcription streaming service and verified that end-to-end audio chunking performs reliably with 16kHz mono audio. Daniel emphasized that project timelines are locked for next Friday.',
+    summary: {
+      executiveSummary: 'Align priorities with overall project timeline and prepare follow-up tasks for engineering team members.',
+      keyDecisions: [
+        'Locked backend API schema for live audio chunks.',
+        'Enforced strict 16kHz mono sampling across client recorders.',
+      ],
+      actionItems: [
+        { id: 'act-back-1', task: 'Align priorities with overall project timeline', assignee: 'Daniel Ross', done: true },
+        { id: 'act-back-2', task: 'Prepare follow-up tasks for team members', assignee: 'Hannah Lee', done: false },
+      ],
+    },
+    notes: '### Discussion Summary\n- Timeline is on track for Q4 release.\n- Follow up with Alex on memory profiling.',
+    tags: ['Backend', 'Engineering', 'Timeline'],
+  },
+  {
+    id: 'rec-content-1',
+    meetingId: 'meet-content-plan',
+    meetingTitle: 'Content Planning Checklist',
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    durationSeconds: 2100,
+    fileSizeBytes: 67200000,
+    createdAt: new Date().toISOString(),
+    audioFormat: 'wav_16khz_mono',
+    status: 'completed',
+    transcript: 'Hannah walked through the content assets and styleguide components required for the mobile release.',
+    summary: {
+      executiveSummary: 'Finalized mobile app UI kit copy, checklist definitions, and release notes for marketing campaign.',
+      keyDecisions: [
+        'Approve Lokanaka Studio Figma tokens for production theme.',
+        'Schedule release announcement for Monday.',
+      ],
+      actionItems: [
+        { id: 'act-cont-1', task: 'Review copy drafts for mobile landing page', assignee: 'Hannah Lee', done: true },
+        { id: 'act-cont-2', task: 'Finalize sprint backlog for release v1.2', assignee: 'Daniel Ross', done: false },
+      ],
+    },
+    notes: '### Content Highlights\n- All screens match the 4-part Figma UI kit.',
+    tags: ['Content', 'Design', 'Checklist'],
+  },
   {
     id: 'rec-sample-1',
     meetingId: undefined,
     meetingTitle: 'Q4 AI Architecture & Whisper Engine Strategy',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
     durationSeconds: 1680,
     fileSizeBytes: 53760000,
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(), // 4 hours ago
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
     audioFormat: 'wav_16khz_mono',
     status: 'completed',
-    transcript: 'We began the session by reviewing our speech-to-text benchmark metrics. On-device inference with Whisper tiny gives us sub-second latency while guaranteeing absolute privacy because no audio packets ever touch the public internet. Alex noted that 16kHz mono sampling delivers optimal word-error-rate across both conference room speakerphones and Bluetooth headsets. Next steps are to finalize the quantization pipeline and implement automated background note synthesis.',
+    transcript: 'We began the session by reviewing our speech-to-text benchmark metrics. On-device inference with Whisper tiny gives us sub-second latency while guaranteeing absolute privacy because no audio packets ever touch the public internet.',
     summary: {
-      executiveSummary: 'Reviewed on-device Whisper model performance, verified zero data-leak guarantees for privacy-conscious enterprise users, and confirmed 16kHz mono audio standard across iOS and Android builds.',
+      executiveSummary: 'Reviewed on-device Whisper model performance, verified zero data-leak guarantees for privacy-conscious enterprise users, and confirmed 16kHz mono audio standard.',
       keyDecisions: [
         'Selected Whisper tiny as default model for on-device real-time transcription.',
         'Enforced strict local device cache for meeting notes and transcripts.',
-        'Scheduled cross-platform testing across iOS and Android native audio drivers.',
       ],
       actionItems: [
         { id: 'act-1-1', task: 'Run Whisper benchmark on physical devices', assignee: 'Alex Chen', done: true },
         { id: 'act-1-2', task: 'Optimize mono WAV buffer allocation for low memory devices', assignee: 'Sarah Connor', done: false },
-        { id: 'act-1-3', task: 'Set up note export pipeline for markdown and JSON formats', assignee: 'Sukhjeet', done: false },
       ],
     },
-    notes: '### Key Discussion Points\n- Evaluated transcription latency between Tiny (39M parameters) and Base (74M parameters).\n- Confirmed that local processing eliminates recurring third-party API costs.\n- Recommended automated keyword extraction for instant search indexing.',
+    notes: '### Architecture Notes\n- Offline-first execution ensures privacy compliance.',
     tags: ['Architecture', 'Whisper', 'On-Device'],
-  },
-  {
-    id: 'rec-sample-2',
-    meetingId: undefined,
-    meetingTitle: 'Product Design & Mobile Audio Waveform Review',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
-    durationSeconds: 940,
-    fileSizeBytes: 30080000,
-    createdAt: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-    audioFormat: 'wav_16khz_mono',
-    status: 'completed',
-    transcript: 'The team reviewed the new floating recording visualizer and calendar schedule grid. User testing indicated that having an explicit Notes tab with instant keyword search is critical for users who record multiple meetings per day. We agreed to implement a clean card layout with expandable summaries and interactive action-item checklists.',
-    summary: {
-      executiveSummary: 'Design critique of recording deck and meeting dashboard. Approved dedicated Notes tab with real-time search, interactive action items, and embedded audio player.',
-      keyDecisions: [
-        'Add dedicated Notes tab in bottom navigation for immediate access to past recordings.',
-        'Include interactive checklists so users can tick off action items directly from notes.',
-        'Support markdown formatting and summary copying.',
-      ],
-      actionItems: [
-        { id: 'act-2-1', task: 'Design clean search bar with real-time filter chips', assignee: 'Design Team', done: true },
-        { id: 'act-2-2', task: 'Add quick copy button for executive summaries', assignee: 'Frontend', done: true },
-        { id: 'act-2-3', task: 'Implement full-text search across transcript and key decisions', assignee: 'Sukhjeet', done: true },
-      ],
-    },
-    notes: '### Feedback Summary\n- Users love the one-tap recording button from any screen.\n- Highlight search matches so users can find decisions in seconds.\n- Provide clean empty states with direct call-to-action.',
-    tags: ['Design', 'UI/UX', 'Notes'],
-  },
-  {
-    id: 'rec-sample-3',
-    meetingId: undefined,
-    meetingTitle: 'Sprint 14 Retrospective & Cloud Calendar Sync',
-    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
-    durationSeconds: 1420,
-    fileSizeBytes: 45440000,
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(), // 3 days ago
-    audioFormat: 'wav_16khz_mono',
-    status: 'completed',
-    transcript: 'Sprint 14 concluded with all primary calendar sync objectives met. Google OAuth 2.0 now functions smoothly across desktop web and mobile apps via Expo AuthSession proxy. Calendar events sync cleanly onto the day grid, and meetings can be linked to audio recordings with one click.',
-    summary: {
-      executiveSummary: 'Sprint retro covering OAuth 2.0 resolution, Google Calendar REST API integration, and meeting-to-recording association. Team velocity increased by 20%.',
-      keyDecisions: [
-        'Adopted direct token flow (implicit grant) to bypass client secret mismatches.',
-        'Established unified Expo proxy redirect handling for physical mobile devices.',
-        'Prioritized note search and playback as top user requested features.',
-      ],
-      actionItems: [
-        { id: 'act-3-1', task: 'Verify Google Calendar sync on Android and iOS', assignee: 'QA Team', done: true },
-        { id: 'act-3-2', task: 'Prepare release notes for Sprint 14 demo', assignee: 'Product', done: true },
-        { id: 'act-3-3', task: 'Deploy updated build to internal testing track', assignee: 'DevOps', done: false },
-      ],
-    },
-    notes: '### Retrospective Highlights\n- **What went well:** OAuth flow on web and mobile is seamless.\n- **What could improve:** Needed dedicated tab for browsing previous meeting notes.\n- **Action:** Deliver clean Notes tab with search in current milestone.',
-    tags: ['Sprint', 'Retro', 'Google'],
   },
 ];
 
@@ -154,8 +254,8 @@ const INITIAL_DOWNLOADED_MODELS: Record<string, DownloadedModelRecord> = {
 };
 
 const INITIAL_SETTINGS: UserSettings = {
-  userName: 'User',
-  userEmail: 'user@example.com',
+  userName: 'Launa Vendrick',
+  userEmail: 'launa.vendrick@meetanotes.ai',
   engineMode: 'local',
   whisperModel: 'ggml-tiny.en.bin',
   whisperModelDownloaded: true,
@@ -224,6 +324,10 @@ interface MeetingStoreState {
   toggleActionItem: (recordingId: string, actionItemId: string) => void;
   deleteRecording: (recordingId: string) => void;
 
+  // Quick Notes state (MeetaNotes UI Kit)
+  quickNote: string;
+  updateQuickNote: (note: string) => void;
+
   // Settings & Data Management
   updateSettings: (updates: Partial<UserSettings>) => void;
   clearAllRecordings: () => void;
@@ -235,6 +339,8 @@ export const useMeetingStore = create<MeetingStoreState>((set, get) => ({
   recordings: INITIAL_RECORDINGS,
   connectedAccounts: INITIAL_ACCOUNTS,
   settings: INITIAL_SETTINGS,
+  quickNote: 'Save a personal reminder about this person...',
+  updateQuickNote: (note: string) => set({ quickNote: note }),
   downloadedModels: INITIAL_DOWNLOADED_MODELS,
   downloadProgress: {},
   activeDownloadingModelId: null,
