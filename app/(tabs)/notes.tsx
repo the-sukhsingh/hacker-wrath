@@ -27,7 +27,6 @@ export default function NotesScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<FilterCategory>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
-  const [activeFolderId, setActiveFolderId] = useState<string | null>(null);
 
   const allTags = useMemo(() => {
     const tagSet = new Set<string>();

@@ -136,7 +136,7 @@ export default function HomeScreen() {
           Hi, {settings.userName || 'Launa Vendrick'}!
         </Text>
         <Text style={[styles.greetingSubtitle, { color: colors.textSecondary }]}>
-          Capture today's meeting notes.
+          {"Capture today's meeting notes."}
         </Text>
       </View>
 

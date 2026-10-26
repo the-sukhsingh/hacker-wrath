@@ -7,11 +7,11 @@ import { useColorScheme } from '@/components/useColorScheme';
 export interface MeetaTabBarProps {
   state: {
     index: number;
-    routes: Array<{
+    routes: {
       key: string;
       name: string;
       params?: any;
-    }>;
+    }[];
   };
   descriptors: Record<string, any>;
   navigation: {
