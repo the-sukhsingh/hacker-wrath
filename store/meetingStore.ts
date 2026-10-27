@@ -147,6 +147,7 @@ interface MeetingStoreState {
     }
   ) => Recording;
   discardRecordingSession: () => void;
+  addRecording: (recording: Recording) => void;
   updateRecording: (recordingId: string, updates: Partial<Recording>) => void;
   updateRecordingNote: (recordingId: string, notes: string) => void;
   toggleActionItem: (recordingId: string, actionItemId: string) => void;
@@ -395,6 +396,12 @@ export const useMeetingStore = create<MeetingStoreState>((set, get) => ({
     }));
 
     return newRecording;
+  },
+
+  addRecording: (recording: Recording) => {
+    set((state) => ({
+      recordings: [recording, ...state.recordings.filter((r) => r.id !== recording.id)],
+    }));
   },
 
   updateRecording: (recordingId: string, updates: Partial<Recording>) => {

@@ -58,6 +58,7 @@ function RootLayoutNav() {
       }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="meeting/[id]" options={{ presentation: 'card', headerShown: true }} />
+        <Stack.Screen name="meeting/room" options={{ presentation: 'fullScreenModal', headerShown: false }} />
         <Stack.Screen name="notes/[id]" options={{ presentation: 'card', headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Privacy Architecture' }} />
       </Stack>

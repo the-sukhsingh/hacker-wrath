@@ -7,26 +7,38 @@ import {
   Clipboard,
   Platform,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Text, View } from './Themed';
 import { Ionicons } from '@expo/vector-icons';
 import { Meeting } from '@/types/meeting';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from './useColorScheme';
+import { QRCodeView } from './ui/QRCodeView';
+import { useVoiceRoomStore } from '@/store/voiceRoomStore';
 
 interface MeetingInviteModalProps {
   visible: boolean;
   meeting: Meeting | null;
   onClose: () => void;
+  onLaunchVoiceRoom?: (roomCode: string) => void;
 }
 
-export function MeetingInviteModal({ visible, meeting, onClose }: MeetingInviteModalProps) {
+export function MeetingInviteModal({
+  visible,
+  meeting,
+  onClose,
+  onLaunchVoiceRoom,
+}: MeetingInviteModalProps) {
+  const router = useRouter();
   const theme = useColorScheme();
   const colors = Colors[theme];
   const [copied, setCopied] = useState(false);
+  const { createRoom } = useVoiceRoomStore();
 
   if (!meeting) return null;
 
-  const meetingUrl = meeting.meetingUrl || `https://meetanotes.io/${meeting.id.replace('meet-', '')}`;
+  const roomCode = meeting.id.replace('meet-', '').slice(0, 6).toUpperCase();
+  const meetingUrl = meeting.meetingUrl || `https://meetanotes.io/room/${roomCode}`;
 
   const handleCopyLink = () => {
     Clipboard.setString(meetingUrl);
@@ -38,12 +50,28 @@ export function MeetingInviteModal({ visible, meeting, onClose }: MeetingInviteM
     try {
       await Share.share({
         title: meeting.title,
-        message: `Join meeting "${meeting.title}" on MeetaNotes: ${meetingUrl}`,
+        message: `Join voice meeting "${meeting.title}" on MeetaNotes (Code: ${roomCode}): ${meetingUrl}`,
         url: meetingUrl,
       });
       onClose();
     } catch {
       // Ignored
+    }
+  };
+
+  const handleStartVoiceRoom = () => {
+    onClose();
+    const room = createRoom(meeting.title, {
+      linkedMeetingId: meeting.id,
+      topic: meeting.agenda || 'Scheduled Discussion',
+    });
+    if (onLaunchVoiceRoom) {
+      onLaunchVoiceRoom(room.code);
+    } else {
+      router.push({
+        pathname: '/meeting/room',
+        params: { id: room.id, code: room.code },
+      });
     }
   };
 
@@ -53,15 +81,24 @@ export function MeetingInviteModal({ visible, meeting, onClose }: MeetingInviteM
         <View style={[styles.sheetCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
           {/* Header */}
           <View style={styles.headerRow}>
-            <Text style={[styles.headerTitle, { color: colors.text }]}>Invite for Meeting</Text>
+            <View>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>Invite for Voice Meeting</Text>
+              <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
+                Scan with any phone camera or share link
+              </Text>
+            </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <Ionicons name="close" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Olive Green Card with Title and Stylized QR Code (From UI Kit Image 2) */}
+          {/* Olive Green Card with Title and Scannable QR Code */}
           <View style={[styles.qrCard, { backgroundColor: colors.olive }]}>
             <View style={styles.qrCardLeft}>
+              <View style={styles.roomCodePill}>
+                <Ionicons name="radio" size={12} color="#FFFFFF" style={{ marginRight: 4 }} />
+                <Text style={styles.roomCodeText}>CODE: {roomCode}</Text>
+              </View>
               <Text style={styles.qrCardTitle} numberOfLines={2}>
                 {meeting.title}
               </Text>
@@ -70,28 +107,23 @@ export function MeetingInviteModal({ visible, meeting, onClose }: MeetingInviteM
               </Text>
             </View>
 
-            {/* Stylized QR Code Box */}
-            <View style={styles.qrCodeBox}>
-              <View style={styles.qrGridPattern}>
-                {/* 3 corner squares simulating standard QR markers */}
-                <View style={[styles.qrCornerSquare, { top: 6, left: 6 }]} />
-                <View style={[styles.qrCornerSquare, { top: 6, right: 6 }]} />
-                <View style={[styles.qrCornerSquare, { bottom: 6, left: 6 }]} />
-                {/* Center MeetaNotes 'M' logo badge */}
-                <View style={[styles.qrCenterBadge, { backgroundColor: colors.coral }]}>
-                  <Text style={styles.qrLogoLetter}>M</Text>
-                </View>
-                {/* Visual QR dots */}
-                <View style={[styles.qrDot, { top: 16, left: 24 }]} />
-                <View style={[styles.qrDot, { top: 28, left: 16 }]} />
-                <View style={[styles.qrDot, { top: 40, right: 20 }]} />
-                <View style={[styles.qrDot, { bottom: 16, right: 16 }]} />
-              </View>
+            {/* Real Scannable QR Code */}
+            <View style={styles.qrCodeWrapper}>
+              <QRCodeView
+                value={meetingUrl}
+                size={84}
+                color="#111827"
+                backgroundColor="#FFFFFF"
+                showCenterLogo={true}
+                logoLetter="M"
+                logoBgColor={colors.coral}
+              />
             </View>
           </View>
 
           {/* Copyable Link Input Row */}
           <View style={[styles.linkInputRow, { backgroundColor: colors.surfaceContainer, borderColor: colors.border }]}>
+            <Ionicons name="link-outline" size={16} color={colors.textSecondary} style={{ marginRight: 8 }} />
             <Text style={[styles.linkInputText, { color: colors.text }]} numberOfLines={1}>
               {meetingUrl}
             </Text>
@@ -109,9 +141,17 @@ export function MeetingInviteModal({ visible, meeting, onClose }: MeetingInviteM
           {/* Action Buttons */}
           <View style={styles.actionRow}>
             <TouchableOpacity
+              onPress={handleStartVoiceRoom}
+              style={[styles.startRoomBtn, { backgroundColor: colors.primary }]}>
+              <Ionicons name="mic" size={17} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.startRoomBtnText}>Launch Voice Room</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
               onPress={handleShare}
-              style={[styles.primaryContinueBtn, { backgroundColor: colors.primary }]}>
-              <Text style={styles.primaryContinueBtnText}>Share Invitation</Text>
+              style={[styles.secondaryShareBtn, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+              <Ionicons name="share-social-outline" size={16} color={colors.text} style={{ marginRight: 6 }} />
+              <Text style={[styles.secondaryShareBtnText, { color: colors.text }]}>Share Link & Code</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -141,14 +181,19 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
+    alignItems: 'flex-start',
+    marginBottom: 16,
     backgroundColor: 'transparent',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '700',
     letterSpacing: -0.3,
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    marginTop: 2,
   },
   closeBtn: {
     width: 32,
@@ -159,73 +204,49 @@ const styles = StyleSheet.create({
   },
   qrCard: {
     borderRadius: 20,
-    padding: 18,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   qrCardLeft: {
     flex: 1,
     paddingRight: 12,
     backgroundColor: 'transparent',
   },
-  qrCardTitle: {
-    fontSize: 16,
+  roomCodePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  roomCodeText: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
-    lineHeight: 22,
-    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  qrCardTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 20,
+    marginBottom: 4,
   },
   qrCardSubtitle: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'rgba(255, 255, 255, 0.8)',
     fontWeight: '500',
   },
-  qrCodeBox: {
-    width: 80,
-    height: 80,
+  qrCodeWrapper: {
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    padding: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qrGridPattern: {
-    width: '100%',
-    height: '100%',
-    position: 'relative',
-    backgroundColor: 'transparent',
-  },
-  qrCornerSquare: {
-    position: 'absolute',
-    width: 16,
-    height: 16,
-    borderWidth: 3,
-    borderColor: '#111827',
-    borderRadius: 3,
-  },
-  qrCenterBadge: {
-    position: 'absolute',
-    top: 24,
-    left: 24,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  qrLogoLetter: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '900',
-  },
-  qrDot: {
-    position: 'absolute',
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: '#111827',
+    padding: 4,
   },
   linkInputRow: {
     flexDirection: 'row',
@@ -233,8 +254,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     paddingHorizontal: 14,
-    paddingVertical: 10,
-    marginBottom: 20,
+    paddingVertical: 8,
+    marginBottom: 16,
   },
   linkInputText: {
     flex: 1,
@@ -243,9 +264,9 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   copyBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -253,11 +274,13 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     backgroundColor: 'transparent',
+    gap: 10,
     marginBottom: Platform.OS === 'ios' ? 14 : 6,
   },
-  primaryContinueBtn: {
-    borderRadius: 24,
-    height: 50,
+  startRoomBtn: {
+    flexDirection: 'row',
+    borderRadius: 22,
+    height: 48,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#E06D53',
@@ -266,10 +289,22 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 4,
   },
-  primaryContinueBtnText: {
+  startRoomBtnText: {
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '700',
     letterSpacing: -0.2,
+  },
+  secondaryShareBtn: {
+    flexDirection: 'row',
+    borderRadius: 22,
+    height: 46,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  secondaryShareBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
