@@ -33,7 +33,6 @@ export default function RecordScreen() {
     meetings,
     recordings,
     activeRecording,
-    settings,
     startRecordingSession,
     pauseRecordingSession,
     resumeRecordingSession,
@@ -133,14 +132,6 @@ export default function RecordScreen() {
         .padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const formatEstimatedFileSize = (seconds: number): string => {
-    const bytes = seconds * 32000;
-    if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(1)} KB`;
-    }
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   };
 
   const handleStart = async () => {
@@ -302,8 +293,6 @@ export default function RecordScreen() {
   };
 
   const selectedMeeting = meetings.find((m) => m.id === selectedMeetingId);
-  const liveWordCount = liveTranscript.split(/\s+/).filter(Boolean).length;
-  const isSpeechSupported = realtimeTranscriptionService.isSpeechSupported();
   const isPermissionDenied = realtimeTranscriptionService.isPermissionDenied();
 
   let placeholderText = 'Listening for speech in 16kHz PCM audio... Speak into your microphone.';
@@ -326,110 +315,51 @@ export default function RecordScreen() {
         topOffset={Math.max(insets.top + 10, 24)}
       />
 
-      {/* 1. TOP HEADER */}
+      {/* 1. MINIMAL TOP HEADER */}
       <View style={styles.topHeader}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.screenTitle, { color: colors.text }]}>
-            {recordViewMode === 'room' ? 'Live Room' : 'Studio Recorder'}
+        <TouchableOpacity
+          disabled={activeRecording.isRecording}
+          onPress={() => setMeetingPickerOpen(true)}
+          style={[
+            styles.quietMeetingPill,
+            {
+              backgroundColor: colors.surfaceContainer,
+              borderColor: colors.border,
+              opacity: activeRecording.isRecording ? 0.8 : 1,
+            },
+          ]}>
+          <Ionicons
+            name={selectedMeeting ? 'calendar-outline' : 'mic-outline'}
+            size={13}
+            color={selectedMeeting ? colors.coral : colors.textSecondary}
+          />
+          <Text
+            numberOfLines={1}
+            style={[styles.quietMeetingPillText, { color: colors.text }]}>
+            {selectedMeeting ? selectedMeeting.title : 'Quick Voice Note'}
           </Text>
-          <Text style={[styles.screenSub, { color: colors.textSecondary }]}>
-            {recordViewMode === 'room' ? 'MeetaNotes In-Progress Session' : '16kHz PCM · Local Whisper & Gemma SLM'}
-          </Text>
-        </View>
+          {!activeRecording.isRecording && (
+            <Ionicons name="chevron-down" size={12} color={colors.textSecondary} />
+          )}
+        </TouchableOpacity>
 
-        {/* View Mode Toggle Pill */}
-        <View style={[styles.modeToggleGroup, { backgroundColor: colors.surfaceContainer, borderColor: colors.border }]}>
-          <TouchableOpacity
-            onPress={() => setRecordViewMode('deck')}
-            style={[
-              styles.modeToggleBtn,
-              recordViewMode === 'deck' && [styles.modeToggleBtnActive, { backgroundColor: colors.coral }],
-            ]}>
-            <Ionicons
-              name="radio"
-              size={13}
-              color={recordViewMode === 'deck' ? '#FFFFFF' : colors.textSecondary}
-              style={{ marginRight: 4 }}
-            />
-            <Text
-              style={[
-                styles.modeToggleBtnText,
-                { color: recordViewMode === 'deck' ? '#FFFFFF' : colors.textSecondary },
-              ]}>
-              Studio
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => setRecordViewMode('room')}
-            style={[
-              styles.modeToggleBtn,
-              recordViewMode === 'room' && [styles.modeToggleBtnActive, { backgroundColor: colors.coral }],
-            ]}>
-            <Ionicons
-              name="videocam"
-              size={13}
-              color={recordViewMode === 'room' ? '#FFFFFF' : colors.textSecondary}
-              style={{ marginRight: 4 }}
-            />
-            <Text
-              style={[
-                styles.modeToggleBtnText,
-                { color: recordViewMode === 'room' ? '#FFFFFF' : colors.textSecondary },
-              ]}>
-              Room
-            </Text>
-          </TouchableOpacity>
-        </View>
+        {/* View Mode Switcher */}
+        <TouchableOpacity
+          onPress={() => setRecordViewMode(recordViewMode === 'deck' ? 'room' : 'deck')}
+          style={[styles.viewModeIconBtn, { backgroundColor: colors.surfaceContainer, borderColor: colors.border }]}>
+          <Ionicons
+            name={recordViewMode === 'deck' ? 'videocam-outline' : 'radio-outline'}
+            size={16}
+            color={colors.textSecondary}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 90, 110) }]}
         showsVerticalScrollIndicator={false}>
 
-        {/* 2. TARGET MEETING ANCHOR */}
-        <View style={styles.selectorWrapper}>
-          <Text style={[styles.selectorLabel, { color: colors.textSecondary }]}>ATTACHED MEETING</Text>
-          <TouchableOpacity
-            disabled={activeRecording.isRecording}
-            onPress={() => setMeetingPickerOpen(true)}
-            style={[
-              styles.meetingSelectorBtn,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                opacity: activeRecording.isRecording ? 0.85 : 1,
-              },
-            ]}>
-            <View style={[styles.selectorIconWell, { backgroundColor: selectedMeeting ? colors.coralLight : colors.surfaceContainer }]}>
-              <Ionicons
-                name={selectedMeeting ? 'calendar' : 'mic-outline'}
-                size={15}
-                color={selectedMeeting ? colors.coral : colors.textSecondary}
-              />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text
-                numberOfLines={1}
-                style={[
-                  styles.meetingSelectorText,
-                  { color: selectedMeeting ? colors.text : colors.textSecondary },
-                ]}>
-                {selectedMeeting ? selectedMeeting.title : 'Quick Voice Note (Tap to link meeting)'}
-              </Text>
-              {selectedMeeting && (
-                <Text style={[styles.meetingSelectorSub, { color: colors.textSecondary }]}>
-                  {selectedMeeting.startTime} – {selectedMeeting.endTime}
-                </Text>
-              )}
-            </View>
-            {!activeRecording.isRecording && (
-              <Ionicons name="chevron-down" size={16} color={colors.textSecondary} />
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* 3. STUDIO DECK VIEW */}
+        {/* 2. STUDIO VIEW */}
         {recordViewMode === 'deck' ? (
           <View style={styles.studioContainer}>
             {/* HERO STAGE: QUANTUM SHADER ORB */}
@@ -437,86 +367,32 @@ export default function RecordScreen() {
               <ShaderOrb
                 state={orbMode}
                 meterLevel={activeRecording.meterLevel}
-                size={200}
+                size={210}
               />
 
-              {/* Status Pill Badge */}
-              <View
-                style={[
-                  styles.orbStatusBadge,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}>
-                <View
-                  style={[
-                    styles.statusPulsingDot,
-                    {
-                      backgroundColor: activeRecording.isRecording
-                        ? activeRecording.isPaused
-                          ? '#F59E0B'
-                          : '#EF4444'
-                        : '#10B981',
-                    },
-                  ]}
-                />
-                <Text
-                  style={[
-                    styles.orbStatusBadgeText,
-                    {
-                      color: activeRecording.isRecording
-                        ? activeRecording.isPaused
-                          ? '#F59E0B'
-                          : '#EF4444'
-                        : colors.textSecondary,
-                    },
-                  ]}>
-                  {activeRecording.isRecording
-                    ? activeRecording.isPaused
-                      ? 'PAUSED'
-                      : 'RECORDING AUDIO'
-                    : 'READY TO RECORD'}
-                </Text>
-              </View>
-
-              {/* Monotonic Elapsed Clock */}
+              {/* Minimal Elapsed Timer */}
               <Text style={[styles.timerDisplay, { color: colors.text }]}>
                 {formatTimer(activeRecording.elapsedSeconds)}
               </Text>
 
-              {/* Quiet Audio Specs Bar */}
-              <View style={[styles.metricRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={styles.metricItem}>
-                  <Text style={[styles.metricLabel, { color: colors.textMuted }]}>SIZE</Text>
-                  <Text style={[styles.metricValue, { color: colors.textSecondary }]}>
-                    {formatEstimatedFileSize(activeRecording.elapsedSeconds)}
-                  </Text>
-                </View>
-
-                <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
-
-                <View style={styles.metricItem}>
-                  <Text style={[styles.metricLabel, { color: colors.textMuted }]}>FORMAT</Text>
-                  <Text style={[styles.metricValue, { color: colors.textSecondary }]}>
-                    16kHz Mono WAV
-                  </Text>
-                </View>
-
-                <View style={[styles.metricDivider, { backgroundColor: colors.border }]} />
-
-                <View style={styles.metricItem}>
-                  <Text style={[styles.metricLabel, { color: colors.textMuted }]}>INTELLIGENCE</Text>
-                  <Text style={[styles.metricValue, { color: colors.olive }]}>
-                    On-Device Ready
-                  </Text>
-                </View>
+              {/* Quiet State Subtitle */}
+              <View style={styles.stateSubtitleRow}>
+                {activeRecording.isRecording && !activeRecording.isPaused && (
+                  <View style={[styles.recordingLiveDot, { backgroundColor: '#EF4444' }]} />
+                )}
+                <Text style={[styles.stateSubtitleText, { color: colors.textSecondary }]}>
+                  {activeRecording.isRecording
+                    ? activeRecording.isPaused
+                      ? 'Paused'
+                      : 'Listening...'
+                    : 'Tap to start recording'}
+                </Text>
               </View>
             </View>
 
             {/* REAL-TIME PAST TOPIC RECALL PANEL */}
-            {(activeRecording.isRecording || liveTranscript.length > 0) && (
-              <View style={{ marginTop: 14 }}>
+            {(activeRecording.isRecording || liveTranscript.length > 0) && topicMatches.length > 0 && (
+              <View style={{ width: '100%', marginBottom: 12 }}>
                 <LiveTopicRecallPanel
                   topicMatches={topicMatches}
                   isRecording={activeRecording.isRecording && !activeRecording.isPaused}
@@ -525,7 +401,7 @@ export default function RecordScreen() {
               </View>
             )}
 
-            {/* REAL-TIME LIVE TRANSCRIPTION CARD */}
+            {/* REAL-TIME LIVE TRANSCRIPTION STREAM */}
             {(activeRecording.isRecording || liveTranscript.length > 0) && (
               <View
                 style={[
@@ -536,81 +412,25 @@ export default function RecordScreen() {
                   },
                 ]}>
                 <View style={styles.liveTranscriptHeader}>
-                  <View style={styles.liveBadgeRow}>
-                    <View
-                      style={[
-                        styles.livePulsingDot,
-                        {
-                          backgroundColor:
-                            activeRecording.isRecording && !activeRecording.isPaused
-                              ? '#10B981'
-                              : '#F59E0B',
-                        },
-                      ]}
-                    />
-                    <Text
-                      style={[
-                        styles.liveBadgeText,
-                        {
-                          color:
-                            activeRecording.isRecording && !activeRecording.isPaused
-                              ? '#10B981'
-                              : '#F59E0B',
-                        },
-                      ]}>
-                      {activeRecording.isRecording && !activeRecording.isPaused
-                        ? isSpeechSupported
-                          ? 'LIVE MIC STT'
-                          : 'REAL-TIME TRANSCRIBING'
-                        : 'TRANSCRIPTION PAUSED'}
-                    </Text>
-                  </View>
+                  <Text style={[styles.liveTranscriptLabel, { color: colors.textMuted }]}>
+                    LIVE TRANSCRIPT
+                  </Text>
 
-                  <View style={styles.liveHeaderRight}>
-                    {activeRecording.isRecording && !activeRecording.isPaused && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          const samples = [
-                            'We reviewed the database migration and API gateway response latencies.',
-                            'Hannah noted that sprint deliverables are locked for next Thursday.',
-                            'Alex evaluated the quantized Whisper model buffer and 16kHz audio memory limits.',
-                          ];
-                          const randomSample = samples[Math.floor(Math.random() * samples.length)];
-                          realtimeTranscriptionService.appendSegment(randomSample);
-                          setLiveTranscript((prev) => {
-                            const updated = prev ? `${prev} ${randomSample}` : randomSample;
-                            realtimeTopicRetrievalService.feedRealtimeSpeech(updated);
-                            return updated;
-                          });
-                        }}
-                        style={[styles.editTranscriptBtn, { backgroundColor: colors.surfaceContainer, borderColor: colors.border }]}
-                        accessibilityLabel="Insert sample speech">
-                        <Ionicons name="sparkles" size={11} color={colors.primary} />
-                        <Text style={[styles.editTranscriptBtnText, { color: colors.primary }]}>Sample</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    <TouchableOpacity
-                      onPress={() => {
-                        setEditingText(liveTranscript);
-                        setIsEditingTranscript(true);
-                      }}
-                      style={[styles.editTranscriptBtn, { backgroundColor: colors.surfaceContainer, borderColor: colors.border }]}
-                      accessibilityLabel="Edit or Dictate Transcript">
-                      <Ionicons name="create-outline" size={11} color={colors.textSecondary} />
-                      <Text style={[styles.editTranscriptBtnText, { color: colors.textSecondary }]}>Edit</Text>
-                    </TouchableOpacity>
-
-                    <Text style={[styles.liveWordCountText, { color: colors.textMuted }]}>
-                      {liveWordCount}w
-                    </Text>
-                  </View>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setEditingText(liveTranscript);
+                      setIsEditingTranscript(true);
+                    }}
+                    style={styles.editTranscriptBtn}
+                    accessibilityLabel="Edit or Dictate Transcript">
+                    <Ionicons name="create-outline" size={13} color={colors.textSecondary} />
+                  </TouchableOpacity>
                 </View>
 
                 <ScrollView
                   ref={transcriptScrollRef}
                   style={styles.liveTranscriptScroll}
-                  contentContainerStyle={{ paddingVertical: 4 }}
+                  contentContainerStyle={{ paddingVertical: 2 }}
                   nestedScrollEnabled={true}
                   showsVerticalScrollIndicator={false}>
                   {liveTranscript.length > 0 ? (
@@ -660,12 +480,12 @@ export default function RecordScreen() {
                     ]}>
                     <Ionicons
                       name={activeRecording.isPaused ? 'play' : 'pause'}
-                      size={24}
+                      size={22}
                       color={colors.text}
                     />
                   </TouchableOpacity>
 
-                  {/* Stop & Save Button (Triggers background AI & instant release) */}
+                  {/* Stop & Save Button */}
                   <TouchableOpacity
                     onPress={handleStop}
                     activeOpacity={0.85}
@@ -679,25 +499,8 @@ export default function RecordScreen() {
             {/* DISCARD BUTTON (When recording) */}
             {activeRecording.isRecording && (
               <TouchableOpacity onPress={handleDiscard} style={styles.discardBtn}>
-                <Ionicons name="trash-outline" size={14} color="#EF4444" style={{ marginRight: 6 }} />
+                <Ionicons name="trash-outline" size={13} color="#EF4444" style={{ marginRight: 5 }} />
                 <Text style={styles.discardBtnText}>Discard Recording</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* MODEL HARDWARE BADGE */}
-            {!activeRecording.isRecording && (
-              <TouchableOpacity
-                onPress={() => router.push('/settings')}
-                style={[styles.modelStatusBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <Ionicons
-                  name={settings.whisperModelDownloaded ? 'hardware-chip-outline' : 'cloud-download-outline'}
-                  size={14}
-                  color={settings.whisperModelDownloaded ? colors.olive : colors.warning}
-                />
-                <Text style={[styles.modelStatusText, { color: colors.textSecondary }]}>
-                  Whisper {settings.whisperModel.replace('.en.bin', '').replace('ggml-', '')} · {settings.activeSlmModel ? settings.activeSlmModel.replace('.gguf', '').replace('-it', '').toUpperCase() : 'GEMMA'}
-                </Text>
-                <Ionicons name="chevron-forward" size={12} color={colors.textMuted} />
               </TouchableOpacity>
             )}
           </View>
@@ -989,70 +792,31 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
   },
-  modeToggleGroup: {
-    flexDirection: 'row',
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 3,
-  },
-  modeToggleBtn: {
+  quietMeetingPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 11,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 7,
+    maxWidth: '80%',
   },
-  modeToggleBtnActive: {
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-  },
-  modeToggleBtnText: {
-    fontSize: 11,
+  quietMeetingPillText: {
+    fontSize: 12,
     fontWeight: '600',
     fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
   },
-  scrollContent: {
-    paddingHorizontal: 16,
-  },
-  selectorWrapper: {
-    marginBottom: 16,
-  },
-  selectorLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 0.8,
-    marginBottom: 6,
-    paddingHorizontal: 4,
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
-  },
-  meetingSelectorBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 14,
+  viewModeIconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     borderWidth: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 10,
-  },
-  selectorIconWell: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  meetingSelectorText: {
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
-  },
-  meetingSelectorSub: {
-    fontSize: 11,
-    marginTop: 1,
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
+  scrollContent: {
+    paddingHorizontal: 16,
   },
   studioContainer: {
     alignItems: 'center',
@@ -1060,120 +824,54 @@ const styles = StyleSheet.create({
   orbHeroStage: {
     width: '100%',
     alignItems: 'center',
-    paddingVertical: 18,
-  },
-  orbStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 6,
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  statusPulsingDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  orbStatusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   timerDisplay: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: '700',
     letterSpacing: -1,
     fontVariant: ['tabular-nums'],
-    marginVertical: 4,
+    marginTop: 16,
+    marginBottom: 4,
     fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
   },
-  metricRow: {
+  stateSubtitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
-    borderWidth: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginTop: 10,
-    width: '100%',
-    maxWidth: 340,
+    gap: 6,
   },
-  metricItem: {
-    flex: 1,
-    alignItems: 'center',
+  recordingLiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  metricDivider: {
-    width: 1,
-    height: 20,
-  },
-  metricLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
-  },
-  metricValue: {
-    fontSize: 11,
-    fontWeight: '600',
-    marginTop: 2,
+  stateSubtitleText: {
+    fontSize: 12,
+    fontWeight: '500',
     fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
   },
   liveTranscriptBox: {
     width: '100%',
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 14,
-    marginTop: 14,
+    marginTop: 8,
   },
   liveTranscriptHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 8,
   },
-  liveBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  livePulsingDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  liveBadgeText: {
-    fontSize: 11,
+  liveTranscriptLabel: {
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.6,
     fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
-  },
-  liveHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
   },
   editTranscriptBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    borderWidth: 1,
-    gap: 4,
-  },
-  editTranscriptBtnText: {
-    fontSize: 11,
-    fontWeight: '600',
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
-  },
-  liveWordCountText: {
-    fontSize: 11,
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
+    padding: 4,
   },
   liveTranscriptScroll: {
     maxHeight: 120,
