@@ -242,7 +242,7 @@ export default function HomeScreen() {
               {/* Left Video/Mic Icon Badge */}
               <View style={[styles.videoIconWell, { backgroundColor: colors.coralLight }]}>
                 <Ionicons
-                  name={activeRecording.isRecording ? 'mic' : 'videocam'}
+                  name={activeRecording.isRecording ? 'mic' : 'radio'}
                   size={20}
                   color={colors.coral}
                 />
