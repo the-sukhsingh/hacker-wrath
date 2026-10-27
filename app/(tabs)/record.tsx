@@ -20,6 +20,11 @@ import { realtimeTopicRetrievalService, TopicMatchResult } from '@/services/real
 import { LiveTopicRecallPanel } from '@/components/LiveTopicRecallPanel';
 import { ShaderOrb } from '@/components/ShaderOrb';
 import { ToastNotification, ToastConfig } from '@/components/ToastNotification';
+import { VoiceParticipantTile } from '@/components/VoiceParticipantTile';
+import { CreateVoiceRoomModal } from '@/components/CreateVoiceRoomModal';
+import { JoinVoiceRoomModal } from '@/components/JoinVoiceRoomModal';
+import { useVoiceRoomStore } from '@/store/voiceRoomStore';
+import { voiceRoomService } from '@/services/voiceRoomService';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 
@@ -58,7 +63,11 @@ export default function RecordScreen() {
   // Room view vs Deck view mode
   const [recordViewMode, setRecordViewMode] = useState<'deck' | 'room'>('deck');
   const [isMicMuted, setIsMicMuted] = useState<boolean>(false);
-  const [isCameraOff, setIsCameraOff] = useState<boolean>(false);
+  const [isCameraOff] = useState<boolean>(false);
+  const [createRoomModalOpen, setCreateRoomModalOpen] = useState<boolean>(false);
+  const [joinRoomModalOpen, setJoinRoomModalOpen] = useState<boolean>(false);
+
+  const { activeRoom, currentUserId, currentUserName, toggleMicMute } = useVoiceRoomStore();
 
   // Real-time topic recall state
   const [topicMatches, setTopicMatches] = useState<TopicMatchResult[]>([]);
@@ -507,6 +516,51 @@ export default function RecordScreen() {
         ) : (
           /* 4. ROOM VIEW */
           <View style={styles.roomViewContainer}>
+            {/* Active Room Header Pill or Launch Banner */}
+            {activeRoom ? (
+              <View style={[styles.activeRoomQuickBar, { backgroundColor: colors.coralLight, borderColor: colors.coral }]}>
+                <View style={[styles.activeRoomLiveDot, { backgroundColor: colors.coral }]} />
+                <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+                  <Text style={[styles.activeRoomQuickTitle, { color: colors.coralDark }]}>
+                    LIVE ROOM • {activeRoom.code}
+                  </Text>
+                  <Text style={[styles.activeRoomQuickSub, { color: colors.text }]} numberOfLines={1}>
+                    {activeRoom.title} ({activeRoom.participants.length} connected)
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: '/meeting/room', params: { id: activeRoom.id, code: activeRoom.code } })}
+                  style={[styles.fullscreenRoomBtn, { backgroundColor: colors.coral }]}>
+                  <Text style={styles.fullscreenRoomBtnText}>Full View</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={[styles.noRoomBanner, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                <View style={[styles.noRoomIconBadge, { backgroundColor: colors.coralLight }]}>
+                  <Ionicons name="radio" size={18} color={colors.coral} />
+                </View>
+                <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+                  <Text style={[styles.noRoomTitle, { color: colors.text }]}>Voice Meeting Rooms</Text>
+                  <Text style={[styles.noRoomSub, { color: colors.textSecondary }]}>
+                    Real-time WebRTC audio room with scannable QR code
+                  </Text>
+                </View>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <TouchableOpacity
+                    onPress={() => setCreateRoomModalOpen(true)}
+                    style={[styles.quickLaunchBtn, { backgroundColor: colors.primary }]}>
+                    <Ionicons name="add" size={14} color="#FFF" />
+                    <Text style={styles.quickLaunchBtnText}>New</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setJoinRoomModalOpen(true)}
+                    style={[styles.quickJoinBtn, { borderColor: colors.border }]}>
+                    <Text style={[styles.quickJoinBtnText, { color: colors.text }]}>Join</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
             <View style={[styles.floatingSpeechPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={[styles.speechIconCircle, { backgroundColor: colors.coralLight }]}>
                 <Ionicons name="chatbubble-ellipses" size={14} color={colors.coral} />
@@ -521,67 +575,94 @@ export default function RecordScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* 2x2 Participant Grid */}
+            {/* Live Participants Grid */}
             <View style={styles.participantGrid}>
-              <View style={[styles.participantTile, { backgroundColor: '#3A4832' }]}>
-                <View style={styles.participantAvatarBig}>
-                  <Text style={styles.participantAvatarInitials}>SJ</Text>
-                </View>
-                <View style={styles.participantMicBadge}>
-                  <Ionicons name="mic" size={12} color="#111827" />
-                </View>
-                <View style={styles.participantNameBadge}>
-                  <Text style={styles.participantNameText}>Sherinz Joel</Text>
-                </View>
-              </View>
+              {activeRoom && activeRoom.participants.length > 0 ? (
+                activeRoom.participants.map((p) => (
+                  <View key={p.id} style={{ width: '48%', margin: '1%' }}>
+                    <VoiceParticipantTile
+                      participant={p}
+                      isCurrentUser={p.id === currentUserId}
+                      onPress={() => {
+                        if (p.id === currentUserId) {
+                          const nextMuted = toggleMicMute();
+                          setIsMicMuted(nextMuted);
+                          voiceRoomService.setMute(nextMuted, currentUserId, currentUserName);
+                        }
+                      }}
+                    />
+                  </View>
+                ))
+              ) : (
+                <>
+                  <View style={[styles.participantTile, { backgroundColor: '#3A4832' }]}>
+                    <View style={styles.participantAvatarBig}>
+                      <Text style={styles.participantAvatarInitials}>SJ</Text>
+                    </View>
+                    <View style={styles.participantMicBadge}>
+                      <Ionicons name="mic" size={12} color="#111827" />
+                    </View>
+                    <View style={styles.participantNameBadge}>
+                      <Text style={styles.participantNameText}>Sherinz Joel</Text>
+                    </View>
+                  </View>
 
-              <View style={[styles.participantTile, { backgroundColor: '#80503D' }]}>
-                <View style={styles.participantAvatarBig}>
-                  <Text style={styles.participantAvatarInitials}>JW</Text>
-                </View>
-                <View style={styles.participantMicBadge}>
-                  <Ionicons name="mic" size={12} color="#111827" />
-                </View>
-                <View style={styles.participantNameBadge}>
-                  <Text style={styles.participantNameText}>Jasmine Wild</Text>
-                </View>
-              </View>
+                  <View style={[styles.participantTile, { backgroundColor: '#80503D' }]}>
+                    <View style={styles.participantAvatarBig}>
+                      <Text style={styles.participantAvatarInitials}>JW</Text>
+                    </View>
+                    <View style={styles.participantMicBadge}>
+                      <Ionicons name="mic" size={12} color="#111827" />
+                    </View>
+                    <View style={styles.participantNameBadge}>
+                      <Text style={styles.participantNameText}>Jasmine Wild</Text>
+                    </View>
+                  </View>
 
-              <View style={[styles.participantTile, { backgroundColor: '#8C6C26' }]}>
-                <View style={styles.participantAvatarBig}>
-                  <Text style={styles.participantAvatarInitials}>DR</Text>
-                </View>
-                <View style={styles.participantMicBadge}>
-                  <Ionicons name="mic-off" size={12} color="#EF4444" />
-                </View>
-                <View style={styles.participantNameBadge}>
-                  <Text style={styles.participantNameText}>Daniel Ross</Text>
-                </View>
-              </View>
+                  <View style={[styles.participantTile, { backgroundColor: '#8C6C26' }]}>
+                    <View style={styles.participantAvatarBig}>
+                      <Text style={styles.participantAvatarInitials}>DR</Text>
+                    </View>
+                    <View style={styles.participantMicBadge}>
+                      <Ionicons name="mic-off" size={12} color="#EF4444" />
+                    </View>
+                    <View style={styles.participantNameBadge}>
+                      <Text style={styles.participantNameText}>Daniel Ross</Text>
+                    </View>
+                  </View>
 
-              <View style={[styles.participantTile, { backgroundColor: isCameraOff ? '#1A1C22' : '#2D4468' }]}>
-                <View style={styles.participantAvatarBig}>
-                  <Text style={styles.participantAvatarInitials}>
-                    {isCameraOff ? 'OFF' : 'YOU'}
-                  </Text>
-                </View>
-                <View style={styles.participantMicBadge}>
-                  <Ionicons
-                    name={isMicMuted ? 'mic-off' : 'mic'}
-                    size={12}
-                    color={isMicMuted ? '#EF4444' : '#111827'}
-                  />
-                </View>
-                <View style={styles.participantNameBadge}>
-                  <Text style={styles.participantNameText}>You (Host)</Text>
-                </View>
-              </View>
+                  <View style={[styles.participantTile, { backgroundColor: isCameraOff ? '#1A1C22' : '#2D4468' }]}>
+                    <View style={styles.participantAvatarBig}>
+                      <Text style={styles.participantAvatarInitials}>
+                        {isCameraOff ? 'OFF' : 'YOU'}
+                      </Text>
+                    </View>
+                    <View style={styles.participantMicBadge}>
+                      <Ionicons
+                        name={isMicMuted ? 'mic-off' : 'mic'}
+                        size={12}
+                        color={isMicMuted ? '#EF4444' : '#111827'}
+                      />
+                    </View>
+                    <View style={styles.participantNameBadge}>
+                      <Text style={styles.participantNameText}>You (Host)</Text>
+                    </View>
+                  </View>
+                </>
+              )}
             </View>
 
             {/* In-Call Floating Control Dock */}
             <View style={[styles.inCallDock, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <TouchableOpacity
-                onPress={() => setIsMicMuted(!isMicMuted)}
+                onPress={() => {
+                  const nextMuted = !isMicMuted;
+                  setIsMicMuted(nextMuted);
+                  if (activeRoom) {
+                    toggleMicMute(nextMuted);
+                    voiceRoomService.setMute(nextMuted, currentUserId, currentUserName);
+                  }
+                }}
                 style={[styles.dockBtn, isMicMuted && { backgroundColor: '#FEE2E2' }]}>
                 <Ionicons
                   name={isMicMuted ? 'mic-off' : 'mic'}
@@ -591,19 +672,15 @@ export default function RecordScreen() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => setIsCameraOff(!isCameraOff)}
-                style={[styles.dockBtn, isCameraOff && { backgroundColor: '#FEE2E2' }]}>
-                <Ionicons
-                  name={isCameraOff ? 'videocam-off' : 'videocam'}
-                  size={20}
-                  color={isCameraOff ? '#EF4444' : colors.text}
-                />
+                onPress={() => setCreateRoomModalOpen(true)}
+                style={styles.dockBtn}>
+                <Ionicons name="radio" size={20} color={colors.primary} />
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={() => setRecordViewMode('deck')}
                 style={styles.dockBtn}>
-                <Ionicons name="radio" size={20} color={colors.text} />
+                <Ionicons name="albums-outline" size={20} color={colors.text} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -765,6 +842,18 @@ export default function RecordScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Create Voice Room Modal */}
+      <CreateVoiceRoomModal
+        visible={createRoomModalOpen}
+        onClose={() => setCreateRoomModalOpen(false)}
+      />
+
+      {/* Join Voice Room Modal */}
+      <JoinVoiceRoomModal
+        visible={joinRoomModalOpen}
+        onClose={() => setJoinRoomModalOpen(false)}
+      />
     </View>
   );
 }
@@ -1185,5 +1274,89 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
+  },
+  activeRoomQuickBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    marginBottom: 14,
+    elevation: 3,
+  },
+  activeRoomLiveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 10,
+  },
+  activeRoomQuickTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  activeRoomQuickSub: {
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  fullscreenRoomBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    marginLeft: 8,
+  },
+  fullscreenRoomBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  noRoomBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    marginBottom: 14,
+    gap: 10,
+  },
+  noRoomIconBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noRoomTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  noRoomSub: {
+    fontSize: 11,
+    fontWeight: '400',
+    marginTop: 1,
+  },
+  quickLaunchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    gap: 2,
+  },
+  quickLaunchBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  quickJoinBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  quickJoinBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

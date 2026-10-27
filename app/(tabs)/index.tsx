@@ -16,6 +16,9 @@ import { useMeetingStore } from '@/store/meetingStore';
 import { MeetingCard } from '@/components/MeetingCard';
 import { MeetingInviteModal } from '@/components/MeetingInviteModal';
 import { ManualMeetingModal } from '@/components/ManualMeetingModal';
+import { CreateVoiceRoomModal } from '@/components/CreateVoiceRoomModal';
+import { JoinVoiceRoomModal } from '@/components/JoinVoiceRoomModal';
+import { useVoiceRoomStore } from '@/store/voiceRoomStore';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { Meeting } from '@/types/meeting';
@@ -43,6 +46,10 @@ export default function HomeScreen() {
   const [quickNoteModalVisible, setQuickNoteModalVisible] = useState(false);
   const [quickNoteDraft, setQuickNoteDraft] = useState(quickNote);
   const [reminderToast, setReminderToast] = useState<string | null>(null);
+  const [createRoomModalOpen, setCreateRoomModalOpen] = useState(false);
+  const [joinRoomModalOpen, setJoinRoomModalOpen] = useState(false);
+
+  const { activeRoom } = useVoiceRoomStore();
 
   // Ongoing meeting detection
   const ongoingMeeting = useMemo(() => {
@@ -151,6 +158,67 @@ export default function HomeScreen() {
             <Text style={[styles.toastBannerText, { color: colors.onSecondaryContainer }]}>{reminderToast}</Text>
           </View>
         )}
+
+        {/* ACTIVE VOICE ROOM BANNER */}
+        {activeRoom && (
+          <Pressable
+            onPress={() => router.push({ pathname: '/meeting/room', params: { id: activeRoom.id, code: activeRoom.code } })}
+            style={({ pressed }) => [
+              styles.activeRoomBanner,
+              {
+                backgroundColor: colors.coralLight,
+                borderColor: colors.coral,
+                transform: [{ scale: pressed ? 0.985 : 1 }],
+              },
+            ]}>
+            <View style={[styles.activeRoomLiveDot, { backgroundColor: colors.coral }]} />
+            <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'transparent' }}>
+                <Text style={[styles.activeRoomBannerTitle, { color: colors.coralDark }]}>
+                  LIVE VOICE ROOM • {activeRoom.code}
+                </Text>
+                <View style={styles.activeRoomCountBadge}>
+                  <Text style={styles.activeRoomCountText}>{activeRoom.participants.length} in room</Text>
+                </View>
+              </View>
+              <Text style={[styles.activeRoomBannerSubtitle, { color: colors.text }]} numberOfLines={1}>
+                {activeRoom.title} — Tap to rejoin call
+              </Text>
+            </View>
+            <Ionicons name="arrow-forward-circle" size={24} color={colors.coral} />
+          </Pressable>
+        )}
+
+        {/* VOICE MEETING ROOM QUICK ACTIONS */}
+        <View style={[styles.voiceRoomCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <View style={styles.voiceRoomCardHeader}>
+            <View style={[styles.voiceRoomIconBadge, { backgroundColor: colors.coralLight }]}>
+              <Ionicons name="radio" size={18} color={colors.coral} />
+            </View>
+            <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+              <Text style={[styles.voiceRoomCardTitle, { color: colors.text }]}>Voice Meeting Rooms</Text>
+              <Text style={[styles.voiceRoomCardSubtitle, { color: colors.textSecondary }]}>
+                Real-time audio rooms with WebRTC & live AI notes
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.voiceRoomActionRow}>
+            <TouchableOpacity
+              onPress={() => setCreateRoomModalOpen(true)}
+              style={[styles.startVoiceRoomBtn, { backgroundColor: colors.primary }]}>
+              <Ionicons name="add" size={16} color="#FFFFFF" style={{ marginRight: 4 }} />
+              <Text style={styles.startVoiceRoomBtnText}>New Room</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => setJoinRoomModalOpen(true)}
+              style={[styles.joinVoiceRoomBtn, { borderColor: colors.border, backgroundColor: colors.surfaceContainerLow }]}>
+              <Ionicons name="enter-outline" size={16} color={colors.text} style={{ marginRight: 4 }} />
+              <Text style={[styles.joinVoiceRoomBtnText, { color: colors.text }]}>Join with Code</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
         {/* 2. ONGOING MEETING / CAPTURE HERO CARD */}
         {ongoingMeeting || activeRecording.isRecording ? (
@@ -523,6 +591,18 @@ export default function HomeScreen() {
         visible={inviteMeeting !== null}
         meeting={inviteMeeting}
         onClose={() => setInviteMeeting(null)}
+      />
+
+      {/* Create Voice Room Modal */}
+      <CreateVoiceRoomModal
+        visible={createRoomModalOpen}
+        onClose={() => setCreateRoomModalOpen(false)}
+      />
+
+      {/* Join Voice Room Modal */}
+      <JoinVoiceRoomModal
+        visible={joinRoomModalOpen}
+        onClose={() => setJoinRoomModalOpen(false)}
       />
     </View>
   );
@@ -1006,5 +1086,117 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 13,
     fontWeight: '700',
+  },
+  activeRoomBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    marginBottom: 16,
+    elevation: 4,
+    shadowColor: '#E06D53',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+  },
+  activeRoomLiveDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 12,
+  },
+  activeRoomBannerTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  activeRoomCountBadge: {
+    backgroundColor: 'rgba(224, 109, 83, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  activeRoomCountText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#C8533A',
+  },
+  activeRoomBannerSubtitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    marginTop: 2,
+  },
+  voiceRoomCard: {
+    padding: 18,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginBottom: 16,
+    elevation: 2,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+  },
+  voiceRoomCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    gap: 12,
+    backgroundColor: 'transparent',
+  },
+  voiceRoomIconBadge: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceRoomCardTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: -0.2,
+  },
+  voiceRoomCardSubtitle: {
+    fontSize: 12,
+    fontWeight: '400',
+    marginTop: 2,
+  },
+  voiceRoomActionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: 'transparent',
+  },
+  startVoiceRoomBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: 22,
+    shadowColor: '#E06D53',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  startVoiceRoomBtnText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  joinVoiceRoomBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+  },
+  joinVoiceRoomBtnText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

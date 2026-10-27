@@ -16,6 +16,8 @@ import { MeetingInviteModal } from '@/components/MeetingInviteModal';
 import { AccountConnectCard } from '@/components/AccountConnectCard';
 import { ManualMeetingModal } from '@/components/ManualMeetingModal';
 import { SpecifyAccountModal } from '@/components/SpecifyAccountModal';
+import { CreateVoiceRoomModal } from '@/components/CreateVoiceRoomModal';
+import { JoinVoiceRoomModal } from '@/components/JoinVoiceRoomModal';
 import { AccountProvider, Meeting } from '@/types/meeting';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -58,6 +60,8 @@ export default function ScheduledMeetingsScreen() {
   const [inviteModalMeeting, setInviteModalMeeting] = useState<Meeting | null>(null);
   const [dateTimePickerOpen, setDateTimePickerOpen] = useState(false);
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('09:00 am');
+  const [createRoomModalOpen, setCreateRoomModalOpen] = useState(false);
+  const [joinRoomModalOpen, setJoinRoomModalOpen] = useState(false);
 
   const formatLocalDate = (d: Date): string => {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -224,9 +228,16 @@ export default function ScheduledMeetingsScreen() {
 
         <View style={styles.headerRightActions}>
           <TouchableOpacity
-            onPress={() => router.push('/notes')}
+            onPress={() => setCreateRoomModalOpen(true)}
+            style={[styles.voiceRoomHeaderBtn, { backgroundColor: colors.primary }]}>
+            <Ionicons name="radio" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+            <Text style={styles.voiceRoomHeaderBtnText}>Voice Room</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setJoinRoomModalOpen(true)}
             style={[styles.headerIconBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-            <Ionicons name="search" size={18} color={colors.text} />
+            <Ionicons name="enter-outline" size={18} color={colors.text} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -523,6 +534,18 @@ export default function ScheduledMeetingsScreen() {
         meeting={inviteModalMeeting}
         onClose={() => setInviteModalMeeting(null)}
       />
+
+      {/* Create Voice Room Modal */}
+      <CreateVoiceRoomModal
+        visible={createRoomModalOpen}
+        onClose={() => setCreateRoomModalOpen(false)}
+      />
+
+      {/* Join Voice Room Modal */}
+      <JoinVoiceRoomModal
+        visible={joinRoomModalOpen}
+        onClose={() => setJoinRoomModalOpen(false)}
+      />
     </View>
   );
 }
@@ -560,8 +583,25 @@ const styles = StyleSheet.create({
   headerRightActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
     backgroundColor: 'transparent',
+  },
+  voiceRoomHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    height: 38,
+    borderRadius: 19,
+    shadowColor: '#E06D53',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  voiceRoomHeaderBtnText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   headerIconBtn: {
     width: 40,
