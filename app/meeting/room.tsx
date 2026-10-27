@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
   Clipboard,
   Platform,
-  Alert,
   Modal,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -52,11 +51,11 @@ export default function VoiceRoomScreen() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [transcriptDrawerOpen, setTranscriptDrawerOpen] = useState(false);
   const [endCallModalOpen, setEndCallModalOpen] = useState(false);
-  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [, setIsSummarizing] = useState(false);
   const [toast, setToast] = useState<ToastConfig | null>(null);
   const [topicMatches, setTopicMatches] = useState<TopicMatchResult[]>([]);
 
-  const sessionStartTimeRef = useRef<number>(Date.now());
+  const sessionStartTimeRef = useRef<number>(0);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 1. Ensure room is joined
@@ -89,6 +88,7 @@ export default function VoiceRoomScreen() {
         voiceRoomService.leaveVoiceRoom(activeRoom.id, currentUserId, currentUserName);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 2. High-precision duration timer

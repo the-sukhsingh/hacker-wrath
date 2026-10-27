@@ -27,7 +27,6 @@ export function QRCodeView({
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
 
     QRCode.toDataURL(value, {
       width: size * 2, // 2x density for crisp Retina rendering

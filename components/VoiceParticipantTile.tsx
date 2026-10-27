@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -7,7 +7,6 @@ import Animated, {
   withTiming,
   withSpring,
   Easing,
-  interpolate,
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { VoiceRoomParticipant } from '@/types/voiceRoom';
